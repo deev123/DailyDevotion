@@ -52,14 +52,36 @@ class Passage
     {
 
         //create and assign container
-        this.container = document.createElement("div");
+        this.container = document.createElement("section");
         this.container.id = this.id;
 
         // append container to page
         if (!this.container) return;
 
-        this.titleContainer = document.createElement("h2");
+        this.titleContainer = document.createElement("h1");
+        this.titleContainer.classList.add("hidden");
         this.container.appendChild(this.titleContainer);
+
+        //
+        this.titleSelect = document.createElement("select");
+        this.titleSelect.className = "reading-title-select";
+        this.titleSelect.id = this.id + "_select";
+        this.container.appendChild(this.titleSelect);
+
+        this.list.forEach((passage, i) => {
+            const option = document.createElement("option");
+            option.value = i;
+            option.textContent = passage;
+            this.titleSelect.appendChild(option);
+        });
+        this.titleSelect.value = this.index;
+        
+        this.titleSelect.addEventListener("change", () => {
+            this.index = parseInt(this.titleSelect.value);
+            this.saveState();
+            this.render();
+        });
+        //
 
         this.verseContainer = document.createElement("div");
         this.container.appendChild(this.verseContainer);
@@ -93,6 +115,7 @@ class Passage
         this.titleContainer.textContent = this.current();
         const verses = await BibleAPI.fetchPassage(this.current());
         VerseRenderer.renderVerses(this.verseContainer, verses);
+        this.titleSelect.value = this.index;
 
     }
 
