@@ -38,6 +38,11 @@ body
   max-width: 800px;
 }
 
+#container section
+{
+  margin-bottom:60px;
+}
+
 h1
 {
   text-align: center;
