@@ -144,11 +144,15 @@ class Passage
     {
         if (!this.titleContainer || !this.verseContainer) return;
 
+        // transition out current
+
         this.titleContainer.textContent = this.current();
         const verses = await BibleAPI.fetchPassage(this.current());
         VerseRenderer.renderVerses(this.verseContainer, verses);
+        
+        //transition in new
+        
         this.titleSelect.value = this.index;
-
     }
 
     // save current index of passage as a cookie for persistance
