@@ -159,7 +159,7 @@ class Passage
     saveState()
     {
         //save state in a cookie
-        setCookie(this.id, this.index);
+        setStore(this.id, this.index);
     }
 
 }

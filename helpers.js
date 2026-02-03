@@ -71,25 +71,22 @@ class VerseRenderer {
 
 }
 
-// set a cookie
-function setCookie(name, value, days = 1000)
+// set a local storage value
+function setStore(name, value)
 {
-    const d = new Date();
-    d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
-    document.cookie = `${name}=${encodeURIComponent(value)};path=/;expires=${d.toUTCString()}`;
+    localStorage.setItem(name, JSON.stringify(value));
 }
 
-// get cookie value
-function getCookie(name)
+// get a local storage value
+function getStore(name)
 {
-    const decoded = decodeURIComponent(document.cookie);
-    const prefix = name + "=";
-    const cookies = decoded.split(';');
-    for (let cookie of cookies) {
-        cookie = cookie.trim();
-        if (cookie.startsWith(prefix)) return cookie.substring(prefix.length);
-    }
-    return null;
+    const value = localStorage.getItem(name);
+    return value ? JSON.parse(value) : null;
+}
+
+// delete a local storage value
+function deleteStore(name) {
+    localStorage.removeItem(name);
 }
 
 // return as an array a list separated by newlines

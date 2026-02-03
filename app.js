@@ -14,7 +14,7 @@ async function initReadings(configs)
   for (const cfg of configs)
   {
     const list = await loadList(cfg.file);
-    const savedIndex = parseInt(getCookie(cfg.id)) || 0;
+    const savedIndex = parseInt(getStore(cfg.id)) || 0;
     const reading = new Passage(cfg.id, list, savedIndex);
     await reading.initRenderer(cfg.containerId);
     await reading.render();
