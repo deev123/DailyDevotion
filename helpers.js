@@ -108,6 +108,20 @@ async function loadList(file) {
   }
 }
 
+// save json representation of layout to local storage
+function saveComponentsConfig(json)
+{
+    localStorage.setItem("componentsConfig", JSON.stringify(json))
+}
+
+// load the layout of components as a json object from local storage or return null
+function loadComponentsConfig()
+{
+    const json = localStorage.getItem("componentsConfig");
+    if(!json) return null;
+    return JSON.parse(json);
+}
+
 // js code to create a special checkbox
 function createGooeyCheckbox(id) {
   const wrapper = document.createElement("div");

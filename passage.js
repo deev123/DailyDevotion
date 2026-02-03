@@ -1,9 +1,10 @@
 class Passage
 {
-    constructor(id, list, index = 0)
+    constructor(id, list, index = 0, listSource)
     {
         this.id = id;
         this.list = list;
+        this.listSource = listSource;
         this.index = index;
         
         // containers for rendering
@@ -48,11 +49,11 @@ class Passage
     }
 
     // call once to create the passage elements
-    async initRenderer(containerId)
+    async initRenderer(containerElement)
     {
 
         //create and assign container
-        this.container = document.createElement("section");
+        this.container = document.createElement("div");
         this.container.id = this.id;
 
         // append container to page
@@ -130,9 +131,8 @@ class Passage
         // check.checked = true;
 
         this.container.appendChild(navDiv);
-
-        // add elements to a div "container" in the HTML
-        document.getElementById("container").appendChild(this.container);
+        // add elements to container
+        containerElement.appendChild(this.container);
 
         // render first content
         await this.render();
@@ -160,6 +160,15 @@ class Passage
     {
         //save state in a cookie
         setStore(this.id, this.index);
+    }
+
+    toJSON()
+    {
+        return {
+            type: "passage",
+            id: this.id,
+            list: this.listSource
+        }
     }
 
 }
