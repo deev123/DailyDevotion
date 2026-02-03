@@ -89,14 +89,46 @@ class Passage
         // temporary nav buttons
         const navDiv = document.createElement("div");
         navDiv.classList.add("nav-buttons")
-        const prevBtn = document.createElement("button");
-        prevBtn.textContent = "Previous";
-        prevBtn.addEventListener("click", () => {this.prev(); this.render()});
-        const nextBtn = document.createElement("button");
-        nextBtn.textContent = "Next";
-        nextBtn.addEventListener("click", () => {this.next(); this.render()});
-        navDiv.appendChild(prevBtn);
-        navDiv.appendChild(nextBtn);
+
+
+        // const prevBtn = document.createElement("button");
+        // prevBtn.textContent = "Previous";
+        // prevBtn.addEventListener("click", () => {this.prev(); this.render()});
+        // const nextBtn = document.createElement("button");
+        // nextBtn.textContent = "Next";
+        // nextBtn.addEventListener("click", () =>
+        //     {
+        //         confetti({particleCount: 50, spread: 1000, origin: { y: 0.5 }});
+        //         this.next(); this.render()
+        //     });
+        // navDiv.appendChild(prevBtn);
+        // navDiv.appendChild(nextBtn);
+
+
+        // checkbox for advancing
+        const checkbox = createGooeyCheckbox(this.id + "_checkbox");
+        navDiv.appendChild(checkbox);
+
+        checkbox.addEventListener("change", async () => {
+            let check = checkbox.querySelector("input[type='checkbox']");
+            if (!check.checked) return;
+            
+            confetti({particleCount: 50, spread: 1000, origin: { y: 0.5 }});
+            
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            this.next();
+            // add effect to reading to swoop in?
+            await this.render();
+
+            // reset for next
+            check.checked = false;
+            
+        });
+
+        // to find the checkbox from the checkbox id:
+        // let check = checkbox.querySelector("input[type='checkbox']");
+        // check.checked = true;
+
         this.container.appendChild(navDiv);
 
         // add elements to a div "container" in the HTML
