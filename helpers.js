@@ -151,3 +151,11 @@ function createGooeyCheckbox(id) {
 
   return wrapper;
 }
+
+function createOptionsButton()
+{
+  const button = document.createElement("button");
+  button.textContent = "⋮"; // Unicode vertical dots
+  button.className = "dots-button";
+  return button;
+}

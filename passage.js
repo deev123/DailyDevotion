@@ -11,6 +11,8 @@ class Passage
         this.containerId = null;
         this.titleContainer = null;
         this.verseContainer = null;
+        this.headerContainer = null;
+        this.footerContainer = null;
     }
 
     
@@ -63,11 +65,16 @@ class Passage
         this.titleContainer.classList.add("hidden");
         this.container.appendChild(this.titleContainer);
 
-        //
+        // container for all header elements
+        this.headerContainer = document.createElement("div");
+        this.headerContainer.classList.add("passage-header")
+
         this.titleSelect = document.createElement("select");
         this.titleSelect.className = "reading-title-select";
         this.titleSelect.id = this.id + "_select";
-        this.container.appendChild(this.titleSelect);
+
+        this.headerContainer.appendChild(this.titleSelect);
+        this.container.appendChild(this.headerContainer);
 
         this.list.forEach((passage, i) => {
             const option = document.createElement("option");
@@ -88,8 +95,8 @@ class Passage
         this.container.appendChild(this.verseContainer);
 
         // temporary nav buttons
-        const navDiv = document.createElement("div");
-        navDiv.classList.add("nav-buttons")
+        this.footerContainer = document.createElement("div");
+        this.footerContainer.classList.add("passage-footer")
 
 
         // const prevBtn = document.createElement("button");
@@ -108,7 +115,7 @@ class Passage
 
         // checkbox for advancing
         const checkbox = createGooeyCheckbox(this.id + "_checkbox");
-        navDiv.appendChild(checkbox);
+        this.footerContainer.appendChild(checkbox);
 
         checkbox.addEventListener("change", async () => {
             let check = checkbox.querySelector("input[type='checkbox']");
@@ -130,7 +137,7 @@ class Passage
         // let check = checkbox.querySelector("input[type='checkbox']");
         // check.checked = true;
 
-        this.container.appendChild(navDiv);
+        this.container.appendChild(this.footerContainer);
         // add elements to container
         containerElement.appendChild(this.container);
 
@@ -169,6 +176,18 @@ class Passage
             id: this.id,
             list: this.listSource
         }
+    }
+
+    // get the header element for inserting components like for layout
+    getHeaderContainer()
+    {
+        return this.headerContainer;
+    }
+
+    // get the footer nav controls element
+    getFooterContainer()
+    {
+        return this.footerContainer;
     }
 
 }

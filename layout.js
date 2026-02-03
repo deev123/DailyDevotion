@@ -41,6 +41,10 @@ class Layout
             componentContainer.id = component.id + "_container";
             layoutContainer.appendChild(componentContainer);
             component.initRenderer(componentContainer);
+
+
+            let optionsButton = createOptionsButton();
+            component.getHeaderContainer().appendChild(optionsButton);
             // TODO: Add organise controls and + control
             // possibly need separate containers for each with controls outside
         }
