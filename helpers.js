@@ -159,3 +159,26 @@ function createOptionsButton()
   button.className = "dots-button";
   return button;
 }
+
+// create a menu dropdown from a json of labels and functions
+function createDropdownMenu(options) {
+
+    let menu = document.createElement("div");
+    menu.className = "menu";
+
+    // build items
+    options.forEach(opt => {
+        const item = document.createElement("button");
+        item.textContent = opt.label;
+
+        item.addEventListener("click", (e) => {
+        e.stopPropagation();
+        menu.classList.remove("open");
+        opt.action();
+        });
+
+        menu.appendChild(item);
+    });
+
+    return menu;
+}

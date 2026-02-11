@@ -13,6 +13,9 @@ class Passage
         this.verseContainer = null;
         this.headerContainer = null;
         this.footerContainer = null;
+
+        // store event listeners to enable proper destruction
+        this.listeners = [];
     }
 
     
@@ -117,7 +120,7 @@ class Passage
         const checkbox = createGooeyCheckbox(this.id + "_checkbox");
         this.footerContainer.appendChild(checkbox);
 
-        checkbox.addEventListener("change", async () => {
+        this.onCheckboxChange = async () => {
             let check = checkbox.querySelector("input[type='checkbox']");
             if (!check.checked) return;
             
@@ -131,6 +134,13 @@ class Passage
             // reset for next
             check.checked = false;
             
+        };
+
+        checkbox.addEventListener("change", this.onCheckboxChange);
+        this.listeners.push({
+            element: this.checkbox,
+            type: "change",
+            handler: this.onCheckboxChange
         });
 
         // to find the checkbox from the checkbox id:
@@ -188,6 +198,35 @@ class Passage
     getFooterContainer()
     {
         return this.footerContainer;
+    }
+
+    destroy()
+    {
+        // delete local storage index value
+        localStorage.removeItem(this.id);
+
+        if (this.listeners)
+        {
+            this.listeners.forEach(l => {
+                if (l?.element && l?.type && l?.handler)
+                {
+                    l.element.removeEventListener(l.type, l.handler);
+                }
+            });
+            this.listeners = [];
+        }
+
+        if (this.containerId)
+        {
+            const element = document.getElementById(this.containerId);
+            if (element) element.remove();
+            this.containerId = null;
+            this.titleContainer = null;
+            this.verseContainer = null;
+            this.headerContainer = null;
+            this.footerContainer = null;
+        }
+
     }
 
 }

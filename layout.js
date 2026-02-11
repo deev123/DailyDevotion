@@ -42,12 +42,56 @@ class Layout
             layoutContainer.appendChild(componentContainer);
             component.initRenderer(componentContainer);
 
-
+            const optionsContainer = document.createElement("div");
             let optionsButton = createOptionsButton();
-            component.getHeaderContainer().appendChild(optionsButton);
-            // TODO: Add organise controls and + control
-            // possibly need separate containers for each with controls outside
+            optionsContainer.appendChild(optionsButton);
+
+            // link options menu to the button
+            let optionsMenu = new Menu(optionsButton,
+                [
+                {label:"Move up", action: () => {this.moveUp(component.id); this.initRenderer(containerElement);}},
+                {label:"Move down", action: () => {this.moveDown(component.id); this.initRenderer(containerElement);}},
+                {label:"Delete", action: () => {this.deleteComponent(component.id); this.initRenderer(containerElement);}}
+                ]
+            );
+            component.getHeaderContainer().appendChild(optionsContainer);
         }
+
+        // + component with menu to add new component to layout
+        
+
+        const addContainer = document.createElement("section");
+        addContainer.className = "add-component-container";
+
+        const addButton = document.createElement("button");
+        addButton.textContent = "+";
+        addButton.className = "add-component-button";
+
+        addContainer.appendChild(addButton);
+        layoutContainer.appendChild(addContainer);
+
+        new Menu(addButton,[
+            {
+                label: "Passage",
+                action: async () => {
+                    await this.addComponent({
+                        type: "passage",
+                        id: this.generateId(),
+                        list: "Bible_Chapters.txt"
+                    }, containerElement);
+                }
+            },
+            {
+                label: "Psalm",
+                action: async () => {
+                    await this.addComponent({
+                        type: "passage",
+                        id: this.generateId(),
+                        list: "Psalms.txt"
+                    }, containerElement);
+                }
+            }
+        ]);
 
     }
 
@@ -60,24 +104,67 @@ class Layout
         }
     }
 
-    setActive()
+    moveUp(id)
     {
-        //TODO:
+        const index = this.componentList.findIndex(c => c.id === id);
+        if (index <= 0) return;
+
+        let temp = this.componentList[index -1];
+        this.componentList[index -1] = this.componentList[index];
+        this.componentList[index] = temp;
+        saveComponentsConfig(this.toJSON());
     }
 
-    moveUp(sectionId)
+    moveDown(id)
     {
-        // TODO: 
+        const index = this.componentList.findIndex(c => c.id === id);
+        if (index >= this.componentList.length - 1) return;
+
+        let temp = this.componentList[index +1];
+        this.componentList[index +1] = this.componentList[index];
+        this.componentList[index] = temp;
+        saveComponentsConfig(this.toJSON());
     }
 
-    moveDown(sectionId)
+    deleteComponent(id)
     {
-        // TODO:
+        const index = this.componentList.findIndex(c => c.id === id);
+        if(index === -1) return;
+
+        const component = this.componentList[index];
+        if(component.destroy) component.destroy();
+
+        this.componentList.splice(index, 1);
+        saveComponentsConfig(this.toJSON());
     }
 
     toJSON()
     {
         return this.componentList.map(comp => comp.toJSON());
+    }
+
+    // generate a unique id for a new element
+    generateId()
+    {
+        let id;
+        do
+        {
+            id = "comp_" + Math.random().toString(36).slice(2, 9);
+        } while (this.componentList.some(c => c.id === id));
+        return id;
+    }
+
+    async addComponent(config, containerElement)
+    {
+        const builder = componentBuilders[config.type];
+        if (!builder) return;
+
+        const instance = await builder(config);
+
+        this.componentList.push(instance);
+
+        saveComponentsConfig(this.toJSON());
+        this.initRenderer(containerElement);
     }
 
 }

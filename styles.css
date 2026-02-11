@@ -19,15 +19,13 @@ body
 
 .hidden
 {
-  display:none;
+  display:none !important;
 }
     
 #container
 {
   width: 100%;
   padding: 1px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -79,7 +77,58 @@ p
   transition: background-color 0.2s;
 } */
 
-.passage-footer button:hover {
+.options-menu
+{
+  position: relative;
+}
+
+.menu
+{
+  position:absolute;
+  top: -50px;
+  right: 0px;
+  /* height:50px; */
+  display: flex;
+  flex-direction: column;
+  width: max-content;
+  /* max-width: 20px; */
+  border-radius: 2px;
+  gap: 0px;
+  padding:2px 2px;
+  min-width: 130px;
+  
+  background: #d2d2d2;
+  color: #000000;
+}
+
+.menu button
+{
+  /* all: unset; */
+  text-align: left;
+  display: block;
+  width: 100%;
+  /* box-sizing: border-box; */
+  padding: 10px 10px;
+  margin: 0;
+  line-height: 1;
+  border: none;
+  /* border-bottom: 2px solid #a0a0a0; */
+  cursor: pointer;
+  
+  background: none;
+  color: #000000;
+}
+
+.menu button:hover
+{
+  
+  background: #4f4f4f;;
+  
+  color: #ffffffd8;
+}
+
+.passage-footer button:hover
+{
   background-color: #e0e0e0;
 }
 
@@ -99,6 +148,12 @@ p
   transform: translate(0px, -5px);
 }
 
+.dots-button:hover
+{
+  /* transform: scale(1.05) translate(0px, -5px); */
+  color: #e2e2e2;
+}
+
 .passage-header
 {
   display: flex;
@@ -106,7 +161,8 @@ p
   align-items: center;
 }
 
-.reading-title-select {
+.reading-title-select
+{
   width: 80%;
   padding: 12px 40px 12px 16px;
   font-size: 1.4rem;
@@ -125,7 +181,29 @@ p
   transition: all 0.2s ease;
 }
 
+.add-component-container {
+    text-align: center;
+    padding: 20px 0;
+}
 
+.add-component-button
+{
+    font-size: 24px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    color: var(--text);
+    background: #3e3e3e;
+    cursor: pointer;
+}
+
+.add-component-button:hover
+{
+    color: #3e3e3e;
+    background: var(--text);
+    transition:0.2s;
+}
 
 /* styles for special checkbox */
 .checkbox-wrapper-12 {
@@ -242,4 +320,10 @@ p
     background: #866efb;
     box-shadow: 0 -36px 0 -10px transparent, 32px -16px 0 -10px transparent, 32px 16px 0 -10px transparent, 0 36px 0 -10px transparent, -32px 16px 0 -10px transparent, -32px -16px 0 -10px transparent;
   }
+}
+
+.cbx:hover
+{
+  transform: scale(1.1);
+  /* transition: 0.1s; */
 }
