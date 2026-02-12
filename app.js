@@ -22,6 +22,12 @@ const componentBuilders =
     const passage = new Passage(config.id, list, savedIndex, config.list);
 
     return passage;
+  },
+  notebox: async (config) =>
+  {
+    const notebox = new Notebox(config.id);
+    return notebox;
+    // contents loaded from local storage by initrenderer of notebox
   }
 };
 

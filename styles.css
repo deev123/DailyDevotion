@@ -39,6 +39,7 @@ body
 #container section
 {
   margin-bottom:60px;
+  width: 100%;
 }
 
 h1
@@ -161,6 +162,35 @@ p
   align-items: center;
 }
 
+.notes-header
+{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notes-header-buttons
+{
+  display: flex;
+  justify-content: right;
+  align-items: center;
+}
+
+.notes-edit-button
+{
+  color: var(--text);
+  background: none;
+  border: none;
+  font-size: 32px  !important;
+  transform: translate(0px, -0px);
+  cursor: pointer;
+}
+
+.notes-edit-button:hover
+{
+  color: #ffffff;
+}
+
 .reading-title-select
 {
   width: 80%;
@@ -204,6 +234,16 @@ p
     background: var(--text);
     transition:0.2s;
 }
+
+.notes-edit-button
+{
+  height:100%;
+}
+
+
+
+
+
 
 /* styles for special checkbox */
 .checkbox-wrapper-12 {

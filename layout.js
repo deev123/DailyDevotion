@@ -90,6 +90,15 @@ class Layout
                         list: "Psalms.txt"
                     }, containerElement);
                 }
+            },
+            {
+                label: "Note Box",
+                action: async () => {
+                    await this.addComponent({
+                        type: "notebox",
+                        id: this.generateId(),
+                    }, containerElement);
+                }
             }
         ]);
 
