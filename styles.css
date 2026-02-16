@@ -191,6 +191,17 @@ p
   color: #ffffff;
 }
 
+.notes-content
+{
+  padding: 5px;
+}
+
+.transparent
+{
+  padding: 5px;
+  opacity: 0%;
+}
+
 .reading-title-select
 {
   width: 80%;
