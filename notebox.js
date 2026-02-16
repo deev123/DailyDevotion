@@ -31,7 +31,7 @@ class Notebox
         
         this.title = localStorage.getItem(this.id + "_title") || "Notes";
         this.state = localStorage.getItem(this.id + "_state") || this.states.visible;
-        this.text = localStorage.getItem(this.id + "_text") || "";
+        this.text = localStorage.getItem(this.id + "_text") || "<br>";
     }
 
     save(key, text)
