@@ -169,6 +169,14 @@ p
   align-items: center;
 }
 
+.notes-header h2
+{
+  display: block;
+  max-width: 250px !important;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
 .notes-header-buttons
 {
   display: flex;
@@ -196,10 +204,12 @@ p
   padding: 5px;
 }
 
-.transparent
+.hide-text
 {
   padding: 5px;
-  opacity: 0%;
+  color:#00000000;
+  /* background-color: #000000; */
+  text-decoration: line-through #363636 1rem;
 }
 
 .reading-title-select

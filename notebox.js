@@ -195,7 +195,7 @@ class Notebox
             this.editButton.textContent = this.state;
             this.disableEditMode();
             this.save("_state", this.state);
-            this.contentContainer.classList.add("transparent");
+            this.contentContainer.classList.add("hide-text");
 
         }
         else if(this.state === this.states.visible)
@@ -203,7 +203,7 @@ class Notebox
             
             this.editButton.textContent = this.state;
             this.enableEditMode();
-            this.contentContainer.classList.remove("transparent");
+            this.contentContainer.classList.remove("hide-text");
             this.save("_state", this.state);
             
 
@@ -212,7 +212,7 @@ class Notebox
         {
             this.editButton.textContent = this.state;
             this.disableEditMode();
-            this.contentContainer.classList.remove("transparent");
+            this.contentContainer.classList.remove("hide-text");
             this.save("_state", this.state);
 
         }
