@@ -99,6 +99,16 @@ class Layout
                         id: this.generateId(),
                     }, containerElement);
                 }
+            },
+            // video playlist
+            {
+                label: "Video Playlist",
+                action: async () => {
+                    await this.addComponent({
+                        type: "videoPlaylist",
+                        id: this.generateId(),
+                    }, containerElement);
+                }
             }
         ]);
 

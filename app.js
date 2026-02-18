@@ -28,6 +28,12 @@ const componentBuilders =
     const notebox = new Notebox(config.id);
     return notebox;
     // contents loaded from local storage by initrenderer of notebox
+  },
+  // video playlist
+  videoPlaylist: async (config) =>
+  {
+    const playlist = new VideoPlaylist(config.id);
+    return playlist;
   }
 };
 
