@@ -2,10 +2,12 @@ import type { MenuOption } from "./Menu.tsx" // import type important for import
 import Menu from "./Menu.tsx"
 
 type VideoPlaylistProps = {
-    layoutOptions: MenuOption[];
+    layoutOptions: MenuOption[],
+    id: string,
+    list: string // file name or local store var name
 }
 
-function VideoPlaylist({ layoutOptions }: VideoPlaylistProps){
+function VideoPlaylist({ layoutOptions, id, list }: VideoPlaylistProps){
 
     return <section>
         <div className="passage-header">

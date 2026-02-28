@@ -9,19 +9,19 @@ import Menu from "./Menu.tsx"
 // component types allowed in Layout
 
 type Passage_t = {
-    type: "passage"
-    id: string
+    type: "passage",
+    id: string,
     list: string
 }
 
 type NoteBox_t = {
-    type: "notebox"
+    type: "notebox",
     id: string
 }
 
 type VideoPlaylist_t = {
-    type: "videoPlaylist"
-    id: string
+    type: "videoPlaylist",
+    id: string,
     list: string
 }
 
@@ -242,11 +242,11 @@ function Layout(){
 
             switch(c.type){
                 case "passage":
-                    return <Passage layoutOptions={layoutOptions} key={c.id}/>;
+                    return <Passage layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
                 case "notebox":
-                    return <NoteBox layoutOptions={layoutOptions} key={c.id}/>;
+                    return <NoteBox layoutOptions={layoutOptions} id={c.id} key={c.id}/>;
                 case "videoPlaylist":
-                    return <VideoPlaylist layoutOptions={layoutOptions} key={c.id}/>;
+                    return <VideoPlaylist layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
                 }
             })
         }

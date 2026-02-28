@@ -2,10 +2,12 @@ import type { MenuOption } from "./Menu.tsx" // import type important for import
 import Menu from "./Menu.tsx"
 
 type PassageProps = {
-    layoutOptions: MenuOption[];
+    layoutOptions: MenuOption[],
+    id: string,
+    list: string // file name or local store var name
 }
 
-function Passage({ layoutOptions }: PassageProps){
+function Passage({ layoutOptions, id, list }: PassageProps){
 
     // add additional options to menu if needed:
     // const menuOptions = [...layoutOptions, ...extraOptions];

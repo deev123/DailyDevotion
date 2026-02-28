@@ -2,10 +2,11 @@ import type { MenuOption } from "./Menu.tsx" // import type important for import
 import Menu from "./Menu.tsx"
 
 type NoteBoxProps = {
-    layoutOptions: MenuOption[];
+    layoutOptions: MenuOption[],
+    id: string
 }
 
-function NoteBox({ layoutOptions }: NoteBoxProps){
+function NoteBox({ layoutOptions, id }: NoteBoxProps){
 
     // add additional options to menu if needed:
     // const menuOptions = [...layoutOptions, ...extraOptions];
