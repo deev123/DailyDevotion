@@ -133,10 +133,27 @@ function Layout(){
 
     function deleteComponent(id: string)
     {
-        setComponentsConfig( prev => {
+        setComponentsConfig((prev) => {
             const index = prev.findIndex(c => c.id === id);
             if(index === -1) return prev; // not found
-            
+
+            // Handle cleanup of local store values when deleted
+            // Potentially better to make classes for each component with helpers like deleteStores()
+            // but for now layout will manage cleanup here
+            switch(prev[index].type){
+                case "passage":
+                    localStorage.removeItem(id + "_index");
+                    break;
+                case "notebox":
+                    localStorage.removeItem(id + "_title");
+                    localStorage.removeItem(id + "_text");
+                    localStorage.removeItem(id + "_state");
+                    break;
+                case "videoPlaylist":
+                    localStorage.removeItem(id + "_index");
+                    break;
+            }
+
             // new list with the old index skipped
             const newList = [...prev.slice(0, index), ...prev.slice(index +1)];
             // save the new config list
