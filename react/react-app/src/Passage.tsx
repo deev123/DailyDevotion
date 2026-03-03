@@ -60,9 +60,9 @@ class VerseRenderer {
   // create jsx components for verses from the api
   // sort of a component in a way
   static createVerseComponents(verses: any): ReactElement[] {
-    let jsx = verses.map((v: any) => {
+    let jsx = verses.map((v: any, i: number) => {
         return (
-            <p>
+            <p key={`${i}`}>
                 <span className="verse-number">{v.verse ? `${v.verse}. ` : ""}</span>
                 {VerseRenderer.convertToLORD(v.text)}
             </p>
@@ -178,7 +178,7 @@ function Passage({ layoutOptions, id, list }: PassageProps){
                 onChange={(e) => {setIndex(+e.target.value); saveIndex(+e.target.value)}}    
             >
                 {listElements.map((element, i) => {
-                    return <option value={i}>{element}</option>
+                    return <option key={`${id}_${i}`} value={i}>{element}</option>
                 })}
             </select>
             <div>
