@@ -172,6 +172,7 @@ p
 
 .notes-header h2
 {
+  padding: 5px;
   display: block;
   max-width: 250px !important;
   word-wrap: break-word;
