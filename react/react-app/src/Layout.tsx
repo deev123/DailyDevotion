@@ -55,7 +55,7 @@ const componentsConfigDefault: Component_t[] = [
     {
         type: "videoPlaylist",
         id: "section2yjytj",
-        list: "Bible_Chapters.txt",
+        list: "NIV_Audio_Bible.json",
     }
 ];
 
@@ -231,7 +231,7 @@ function Layout(){
             addComponent({
                 type: "videoPlaylist",
                 id: generateId(),
-                list: "PlaceHolder"
+                list: "NIV_Audio_Bible.json"
             });
         }
     }];
