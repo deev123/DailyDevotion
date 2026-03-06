@@ -42,20 +42,6 @@ const componentsConfigDefault: Component_t[] = [
         type: "passage",
         id: "section2",
         list: "Bible_Chapters.txt",
-    },
-    {
-        type: "notebox",
-        id: "section2dfs",
-    },
-    {
-        type: "passage",
-        id: "section2ffdafedf",
-        list: "Bible_Chapters.txt",
-    },
-    {
-        type: "videoPlaylist",
-        id: "section2yjytj",
-        list: "NIV_Audio_Bible.json",
     }
 ];
 

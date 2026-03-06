@@ -89,15 +89,6 @@ function VideoPlaylist({ layoutOptions, id, list }: VideoPlaylistProps){
         loadIndex();
     },[]);
 
-    // query the verses when selection or list changes
-    useEffect(() => {
-        async function loadVideo() {
-            // TODO: load video here
-        }
-        loadVideo();
-    }, [index, listElements]);
-
-
     return <section>
         <div className="passage-header">
             <select
@@ -116,8 +107,13 @@ function VideoPlaylist({ layoutOptions, id, list }: VideoPlaylistProps){
             </div>
         </div>
         <div className="video-container">
-            <h1>{listElements[index]?.title ?? ""}</h1>
-            <h1>{listElements[index]?.videoId ?? ""}</h1>
+            <iframe
+            width="100%"
+            height="400"
+            src={`https://www.youtube.com/embed/${listElements[index]?.videoId}?rel=0`}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            ></iframe>
         </div>
     </section>
 }
