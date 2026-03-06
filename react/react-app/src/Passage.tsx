@@ -1,6 +1,8 @@
 import type { MenuOption } from "./Menu.tsx" // import type important for importing types
 import Menu from "./Menu.tsx"
 import { useState, useEffect, type ReactElement } from "react"
+import GooeyCheckbox from "./GooeyCheckbox.tsx"
+import confetti from "canvas-confetti"
 
 type PassageProps = {
     layoutOptions: MenuOption[],
@@ -103,6 +105,7 @@ function Passage({ layoutOptions, id, list }: PassageProps){
     // elements of selection. e.g. loaded from Psalms.txt
     let [listElements, setListElements] = useState<string[]>([]);
     let [verses, setVerses] = useState<ReactElement[]>([]);
+    let [checkboxChecked, setCheckboxChecked] = useState(false);
 
     function saveIndex(val: number) {
         localStorage.setItem(id + "_index", JSON.stringify(val));
@@ -189,6 +192,20 @@ function Passage({ layoutOptions, id, list }: PassageProps){
         </div>
         <div>
             {verses.length > 0 ? verses : <p>...</p>}
+        </div>
+        <div className="passage-footer">
+            <GooeyCheckbox
+                isChecked={checkboxChecked}
+                onChange={async ()=>{
+                    setCheckboxChecked(true);
+                    confetti({particleCount: 50, spread: 1000, origin: { y: 0.5 }});
+                
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    next();
+
+                    setCheckboxChecked(false);
+                }}
+            ></GooeyCheckbox>
         </div>
     </section>
     )
