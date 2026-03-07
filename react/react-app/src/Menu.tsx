@@ -1,6 +1,6 @@
 import { createPopper } from "@popperjs/core"
-import type { Instance } from '@popperjs/core'
-import { useRef, useState, useEffect, cloneElement, type MouseEventHandler, type ReactElement, type RefObject} from 'react'
+import type { Instance } from "@popperjs/core"
+import { useRef, useState, useEffect, cloneElement, type ReactElement} from "react"
 
 
 export type MenuOption = {
@@ -36,7 +36,7 @@ function Menu({ options , children}: MenuProps)
     const containerRef = useRef<HTMLDivElement>(null);
     
     // popper instance for positioning the menu
-    const [popperInstance, setPopperInstance] = useState<Instance | null>(null);
+    const [, setPopperInstance] = useState<Instance | null>(null);
     // refs for popper positioning
     const buttonRef = useRef<HTMLButtonElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -71,11 +71,11 @@ function Menu({ options , children}: MenuProps)
         if (!buttonRef.current || !menuRef.current) return;
 
         const popper = createPopper(buttonRef.current, menuRef.current, {
-                placement: 'bottom-start',
+                placement: "bottom-start",
                 modifiers: [
-                    { name: 'offset', options: { offset: [0, 8] } },
-                    { name: 'preventOverflow', options: { padding: 8 } },
-                    { name: 'flip', options: { fallbackPlacements: ['top-start'] } },
+                    { name: "offset", options: { offset: [0, 8] } },
+                    { name: "preventOverflow", options: { padding: 8 } },
+                    { name: "flip", options: { fallbackPlacements: ["top-start"] } },
                 ],
             })
 

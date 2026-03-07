@@ -132,19 +132,20 @@ function Passage({ layoutOptions, id, list }: PassageProps){
         });
     }
 
-    function prev() {
-        setIndex((prev) => {
-            let result = prev;
-            if(prev > 0){
-                result --;
-            }
-            else{
-                result = listElements.length - 1;
-            }
-            saveIndex(result);
-            return result;
-        });
-    }
+    // unused for now
+    // function prev() {
+    //     setIndex((prev) => {
+    //         let result = prev;
+    //         if(prev > 0){
+    //             result --;
+    //         }
+    //         else{
+    //             result = listElements.length - 1;
+    //         }
+    //         saveIndex(result);
+    //         return result;
+    //     });
+    // }
 
     // load the list when created
     useEffect(() => {

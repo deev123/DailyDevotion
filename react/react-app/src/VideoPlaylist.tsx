@@ -1,7 +1,6 @@
 import type { MenuOption } from "./Menu.tsx" // import type important for importing types
 import Menu from "./Menu.tsx"
 import { useEffect, useState } from "react"
-import type { ReactElement } from "react"
 
 type VideoPlaylistProps = {
     layoutOptions: MenuOption[],
@@ -34,33 +33,33 @@ function VideoPlaylist({ layoutOptions, id, list }: VideoPlaylistProps){
         })
     }
 
-    function next() {
-        setIndex((prev) => {
-            let result = prev;
-            if(prev < listElements.length){
-                result ++;
-            }
-            else{
-                result = 0;
-            }
-            saveIndex(result);
-            return result;
-        });
-    }
+    // function next() {
+    //     setIndex((prev) => {
+    //         let result = prev;
+    //         if(prev < listElements.length){
+    //             result ++;
+    //         }
+    //         else{
+    //             result = 0;
+    //         }
+    //         saveIndex(result);
+    //         return result;
+    //     });
+    // }
 
-    function prev() {
-        setIndex((prev) => {
-            let result = prev;
-            if(prev > 0){
-                result --;
-            }
-            else{
-                result = listElements.length - 1;
-            }
-            saveIndex(result);
-            return result;
-        });
-    }
+    // function prev() {
+    //     setIndex((prev) => {
+    //         let result = prev;
+    //         if(prev > 0){
+    //             result --;
+    //         }
+    //         else{
+    //             result = listElements.length - 1;
+    //         }
+    //         saveIndex(result);
+    //         return result;
+    //     });
+    // }
 
     // load the list when created
     useEffect(() => {

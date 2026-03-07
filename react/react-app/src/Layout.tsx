@@ -1,9 +1,7 @@
-import { Component, useEffect, useState } from 'react';
-import { createContext, useContext } from 'react'
-import Passage from './Passage.tsx'
-import NoteBox from './NoteBox.tsx'
-import VideoPlaylist from './VideoPlaylist.tsx'
-import type { MenuOption } from './Menu.tsx' // import type important for importing types
+import { useEffect, useState } from "react";
+import Passage from "./Passage.tsx"
+import NoteBox from "./NoteBox.tsx"
+import VideoPlaylist from "./VideoPlaylist.tsx"
 import Menu from "./Menu.tsx"
 
 // component types allowed in Layout
@@ -70,7 +68,7 @@ function Layout(){
     // load the layout from a json object
     function load()
     {    
-        setComponentsConfig(prev => {
+        setComponentsConfig(() => {
             const config = loadComponentsConfig() || componentsConfigDefault;
             return config;
         });
@@ -222,7 +220,7 @@ function Layout(){
         }
     }];
 
-    let elements = <div className='container'>
+    let elements = <div className="container">
         {
             componentsConfig.map((c: Component_t) => {
 
@@ -253,9 +251,9 @@ function Layout(){
                 }
             })
         }
-        <section className='add-component-container'>
+        <section className="add-component-container">
             <Menu options={addElementOptions}>
-                <button className='add-component-button'>+</button>
+                <button className="add-component-button">+</button>
             </Menu>
         </section>
         </div>
