@@ -78,7 +78,7 @@ class VerseRenderer {
 async function loadList(filePath: string) {
     try {
         // console.log(filePath);
-        const response = await fetch(filePath);
+        const response = await fetch(import.meta.env.BASE_URL + filePath);
         // on dev server if file not found it may return index.html
         if (!response.ok) throw new Error("Failed to load file");
 

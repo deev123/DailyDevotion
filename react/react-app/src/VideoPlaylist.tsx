@@ -68,7 +68,7 @@ function VideoPlaylist({ layoutOptions, id, list }: VideoPlaylistProps){
         async function load() {
             let data = [];
             try {
-                const response = await fetch(list);
+                const response = await fetch(import.meta.env.BASE_URL + list);
                 if (!response.ok) throw new Error("Failed to load file");
                 data = await response.json();
                 // console.log(data);
