@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Passage from "./Passage.tsx"
 import NoteBox from "./NoteBox.tsx"
 import VideoPlaylist from "./VideoPlaylist.tsx"
+import Passage2 from "./Passage2.tsx"
 import Menu from "./Menu.tsx"
 
 // component types allowed in Layout
@@ -23,10 +24,17 @@ type VideoPlaylist_t = {
     list: string
 }
 
+type Passage2_t = {
+    type: "passage2",
+    id: string,
+    list: string
+}
+
 type Component_t =
     | Passage_t
     | NoteBox_t
     | VideoPlaylist_t
+    | Passage2_t
 
 // default layout to use as a fallback
 // variety for testing purposes for now
@@ -136,6 +144,10 @@ function Layout(){
                 case "videoPlaylist":
                     localStorage.removeItem(id + "_index");
                     break;
+                case "passage2":
+                    localStorage.removeItem(id + "_index");
+                    localStorage.removeItem(id + "_version");
+                    break;
             }
 
             // new list with the old index skipped
@@ -218,6 +230,16 @@ function Layout(){
                 list: "NIV_Audio_Bible.json"
             });
         }
+    },
+    {
+        label: "Passage 2",
+        action: () => {
+            addComponent({
+                type: "passage2",
+                id: generateId(),
+                list: "Bible_Chapters.txt"
+            });
+        }
     }];
 
     let elements = <div className="container">
@@ -248,6 +270,8 @@ function Layout(){
                     return <NoteBox layoutOptions={layoutOptions} id={c.id} key={c.id}/>;
                 case "videoPlaylist":
                     return <VideoPlaylist layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
+                case "passage2":
+                    return <Passage2 layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
                 }
             })
         }

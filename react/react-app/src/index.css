@@ -234,6 +234,84 @@ p
   transition: all 0.2s ease;
 }
 
+.passage2-body
+{
+  margin: 10px 0 10px;
+  line-height: 1.6;
+}
+
+/* put each verse on its own line */
+.passage2-body .yv-v
+{
+  display: block;
+  height: 0;
+  margin-bottom: 8px;
+}
+
+.passage2-body .p
+{
+  margin-bottom: 20px;
+}
+
+/* space the verse number away from the text */
+.passage2-body .yv-vlbl
+{
+  display: inline-block;
+  margin-right: 10px;
+  font-weight: 600;
+}
+
+/* error / empty state inside the passage body */
+.passage2-error
+{
+  color: #e0a3a3;
+  font-style: italic;
+}
+
+/* copyright notice required per translation license */
+.passage2-copyright
+{
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 1px solid var(--outline);
+  font-size: 0.75rem;
+  color: var(--text);
+  opacity: 0.8;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.passage2-body h2,
+.passage2-body h3
+{
+  margin: 16px 0 8px;
+}
+
+/* version picker under the chapter select */
+.version-header
+{
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 7px;
+  margin-bottom: 11px;
+}
+
+.version-select
+{
+  width: 80%;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  border-radius: 8px;
+  border: 1px solid var(--outline);
+  background: var(--accent1);
+  color: var(--text);
+  cursor: pointer;
+
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
 .add-component-container {
     text-align: center;
     padding: 20px 0;
