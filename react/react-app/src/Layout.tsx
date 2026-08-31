@@ -3,6 +3,7 @@ import Passage from "./Passage.tsx"
 import NoteBox from "./NoteBox.tsx"
 import VideoPlaylist from "./VideoPlaylist.tsx"
 import Passage2 from "./Passage2.tsx"
+import Catechism from "./Catechism.tsx"
 import Menu from "./Menu.tsx"
 import SettingsSidebar from "./SettingsSidebar.tsx"
 
@@ -31,11 +32,18 @@ type Passage2_t = {
     list: string
 }
 
+type Catechism_t = {
+    type: "catechism",
+    id: string,
+    list: string
+}
+
 type Component_t =
     | Passage_t
     | NoteBox_t
     | VideoPlaylist_t
     | Passage2_t
+    | Catechism_t
 
 // default layout to use as a fallback
 // variety for testing purposes for now
@@ -149,6 +157,9 @@ function Layout(){
                     localStorage.removeItem(id + "_index");
                     localStorage.removeItem(id + "_version");
                     break;
+                case "catechism":
+                    localStorage.removeItem(id + "_index");
+                    break;
             }
 
             // new list with the old index skipped
@@ -241,6 +252,16 @@ function Layout(){
                 list: "Bible_Chapters.txt"
             });
         }
+    },
+    {
+        label: "Heidelberg Catechism",
+        action: () => {
+            addComponent({
+                type: "catechism",
+                id: generateId(),
+                list: "Heidelberg_Catechism.json"
+            });
+        }
     }];
 
     // wraps the layout; the settings button is fixed-position so it floats over everything
@@ -276,6 +297,8 @@ function Layout(){
                     return <VideoPlaylist layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
                 case "passage2":
                     return <Passage2 layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
+                case "catechism":
+                    return <Catechism layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
                 }
             })
         }

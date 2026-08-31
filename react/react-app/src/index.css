@@ -296,6 +296,26 @@ p
   margin: 16px 0 8px;
 }
 
+/* catechism question + answer body */
+.catechism-body
+{
+  margin: 10px 0 10px;
+  line-height: 1.6;
+}
+
+.catechism-question
+{
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin: 0 0 12px;
+}
+
+.catechism-answer
+{
+  font-style: italic;
+  margin: 0;
+}
+
 /* version picker under the chapter select */
 .version-header
 {
