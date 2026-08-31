@@ -550,6 +550,51 @@ p
   color: var(--text);
 }
 
+/* streak pill shown next to the top-right hamburger, sits at the very top of the
+   page and scrolls away with it, and is covered by the open sidebar */
+/* streak pill fixed next to the top-right hamburger; fades out when scrolled */
+.container .streak-area
+{
+  position: fixed; /* stay at the top, beside the fixed hamburger */
+  top: 11px;
+  right: 66px; /* to the left of the fixed hamburger (46px wide + 12px edge pad + gap) */
+  z-index: 1; /* below the sidebar overlay (1999) so the menu covers it */
+  width: auto; /* override .container section { width: 100% } so the pill shrink-wraps */
+  opacity: 1;
+  pointer-events: none; /* never blocks the page */
+  transition: opacity 0.3s ease;
+}
+
+.container .streak-area.streak-faded
+{
+  opacity: 0;
+}
+
+.streak-pill
+{
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: var(--surface-hover);
+  border: 1px solid var(--outline);
+  border-radius: 16px;
+  font-size: 0.9rem;
+  color: var(--text);
+  user-select: none;
+}
+
+.streak-flame
+{
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.streak-count
+{
+  font-weight: 700;
+}
+
 /* dim the page behind the panel, covering the full viewport */
 .sidebar-overlay
 {

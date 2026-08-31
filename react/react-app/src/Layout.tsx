@@ -4,6 +4,7 @@ import NoteBox from "./NoteBox.tsx"
 import VideoPlaylist from "./VideoPlaylist.tsx"
 import Passage2 from "./Passage2.tsx"
 import Catechism from "./Catechism.tsx"
+import Streak from "./Streak.tsx"
 import Menu from "./Menu.tsx"
 import SettingsSidebar from "./SettingsSidebar.tsx"
 
@@ -268,6 +269,7 @@ function Layout(){
     let elements = <>
         <SettingsSidebar/>
         <div className="container">
+        <Streak />
         {
             componentsConfig.map((c: Component_t) => {
 
