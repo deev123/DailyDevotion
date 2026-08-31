@@ -4,6 +4,7 @@ import NoteBox from "./NoteBox.tsx"
 import VideoPlaylist from "./VideoPlaylist.tsx"
 import Passage2 from "./Passage2.tsx"
 import Menu from "./Menu.tsx"
+import SettingsSidebar from "./SettingsSidebar.tsx"
 
 // component types allowed in Layout
 
@@ -242,7 +243,10 @@ function Layout(){
         }
     }];
 
-    let elements = <div className="container">
+    // wraps the layout; the settings button is fixed-position so it floats over everything
+    let elements = <>
+        <SettingsSidebar/>
+        <div className="container">
         {
             componentsConfig.map((c: Component_t) => {
 
@@ -281,6 +285,7 @@ function Layout(){
             </Menu>
         </section>
         </div>
+    </>
 
     return elements
 }
