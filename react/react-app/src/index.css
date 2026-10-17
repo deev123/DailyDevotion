@@ -1,4 +1,40 @@
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("./assets/fonts/OpenDyslexic-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("./assets/fonts/OpenDyslexic-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("./assets/fonts/OpenDyslexic-Italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("./assets/fonts/OpenDyslexic-Bold-Italic.woff2") format("woff2");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
 :root {
+  --font-family: Arial, sans-serif;
+  --font-size: 100%;
+  --letter-spacing: 0em;
+  font-size: var(--font-size);
   /* Preserve user-selected colours instead of browser auto-darkening them. */
   color-scheme: only light;
   --background: #1e1e1e;
@@ -19,13 +55,26 @@
 
 body
 {
-  font-family: Arial, sans-serif;
+  font-family: var(--font-family);
+  letter-spacing: var(--letter-spacing);
   background: var(--background);
   color: var(--text);
   display: flex;
   justify-content: center;
   align-items: flex-start;
   padding: 10px;
+}
+
+button, input, select, textarea
+{
+  font-family: inherit;
+  letter-spacing: inherit;
+}
+
+/* Icon ligatures must keep their original spacing. */
+.material-icons
+{
+  letter-spacing: normal;
 }
 
 .hidden
@@ -681,7 +730,39 @@ p
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   margin-bottom: 16px;
+}
+
+.settings-help
+{
+  margin: -8px 0 20px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.settings-slider-row
+{
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.settings-slider-row input[type="range"]
+{
+  width: 100%;
+  margin: 0;
+}
+
+.settings-font-select
+{
+  min-width: 0;
+  max-width: 170px;
+  padding: 6px;
+  border: 1px solid var(--outline);
+  border-radius: 4px;
+  background: var(--background);
+  color: var(--text);
 }
 
 .settings-row input[type="color"]
