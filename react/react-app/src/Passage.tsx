@@ -123,18 +123,25 @@ function Passage({ layoutOptions, id, list }: PassageProps){
         loadIndex();
 
         async function loadVersion() {
-            const stored = Number.parseInt(JSON.parse(localStorage.getItem(id + "_version") ?? "null"));
+            const savedVersion = localStorage.getItem(id + "_version");
+            const stored = Number.parseInt(JSON.parse(savedVersion ?? "null"));
             const available = await YouVersionAPI.fetchVersions();
             setVersions(available);
 
             if (available.length === 0) return;
 
-            // use stored version if still available, otherwise fall back to first
+            // Saved choices take precedence, including those made before the rename.
             if (stored && available.some((v) => v.id === stored)) {
                 setVersionId(stored);
             } else {
-                setVersionId(available[0].id);
-                saveVersion(available[0].id);
+                // Prefer BSB only for a reader with no saved translation.
+                const berean = available.find((v) =>
+                    v.abbreviation.toUpperCase() === "BSB" ||
+                    v.title.toLowerCase() === "berean standard bible"
+                );
+                const fallback = savedVersion === null ? berean ?? available[0] : available[0];
+                setVersionId(fallback.id);
+                saveVersion(fallback.id);
             }
         }
         loadVersion();
