@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react"
-import { getDocument, GlobalWorkerOptions } from "pdfjs-dist"
+// Include PDF.js compatibility helpers for browsers such as Samsung Internet.
+import { getDocument, GlobalWorkerOptions } from "pdfjs-dist/legacy/build/pdf.mjs"
 import type { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist"
-import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url"
+import workerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url"
 import Menu from "./Menu.tsx"
 import type { MenuOption } from "./Menu.tsx"
 import { loadPdf, savePdf, savePdfPage } from "./pdfStorage.ts"
@@ -57,7 +58,8 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
                 setName(saved.name);
                 setPage(restoredPage);
                 setPageInput(String(restoredPage));
-            } catch {
+            } catch (error) {
+                if (!cancelled) console.error("Could not restore saved PDF:", error);
                 if (!cancelled) setError("Could not open the saved PDF. Try choosing the file again.");
             } finally {
                 if (!cancelled) setBusy(false);
@@ -110,10 +112,18 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
                 await renderTask.promise;
                 if (cancelled) return;
                 pageRef.current?.replaceChildren(canvas);
-                const text = await currentPage.getTextContent();
-                if (!cancelled) setPageText(text.items.map((item) => "str" in item ? item.str + (item.hasEOL ? "\n" : " ") : "").join(""));
-            } catch {
-                if (!cancelled) setError("Could not display this PDF page. Try another page or choose the file again.");
+                try {
+                    const text = await currentPage.getTextContent();
+                    if (!cancelled) setPageText(text.items.map((item) => "str" in item ? item.str + (item.hasEOL ? "\n" : " ") : "").join(""));
+                } catch (error) {
+                    // The text version is optional; keep a successfully rendered page visible.
+                    if (!cancelled) console.warn("Could not extract PDF page text:", error);
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    console.error("Could not render PDF page:", error);
+                    setError("Could not display this PDF page. Try another page or choose the file again.");
+                }
             } finally {
                 if (!cancelled) setRendering(false);
             }
@@ -147,6 +157,7 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
             setZoom(1);
             if (previousTask) void previousTask.destroy();
         } catch (err) {
+            if (mounted.current) console.error("Could not open or save PDF:", err);
             if (nextDocument) void nextDocument.loadingTask.destroy();
             loadingRef.current = previousTask;
             if (mounted.current) setError(err instanceof DOMException && err.name === "QuotaExceededError"
