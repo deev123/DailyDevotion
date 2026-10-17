@@ -1,4 +1,6 @@
 :root {
+  /* Preserve user-selected colours instead of browser auto-darkening them. */
+  color-scheme: only light;
   --background: #1e1e1e;
   --text: #d7d7d7;
   
