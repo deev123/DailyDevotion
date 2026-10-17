@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import Passage from "./Passage.tsx"
 import NoteBox from "./NoteBox.tsx"
 import VideoPlaylist from "./VideoPlaylist.tsx"
@@ -6,6 +6,9 @@ import LegacyPassage from "./LegacyPassage.tsx"
 import Catechism from "./Catechism.tsx"
 import Header from "./Header.tsx"
 import Menu from "./Menu.tsx"
+import { deletePdf } from "./pdfStorage.ts"
+
+const PdfReader = lazy(() => import("./PdfReader.tsx"));
 
 // Persisted type identifiers intentionally keep their original meanings:
 // "passage" = LegacyPassage (Bible API), "passage2" = Passage (YouVersion).
@@ -46,6 +49,7 @@ type Component_t =
     | VideoPlaylist_t
     | Passage_t
     | Catechism_t
+    | { type: "pdfReader"; id: string }
 
 // New layouts start with YouVersion readers; saved layouts take precedence.
 const componentsConfigDefault: Component_t[] = [
@@ -62,6 +66,7 @@ const componentsConfigDefault: Component_t[] = [
 ];
 
 function Layout(){
+    const [layoutError, setLayoutError] = useState("");
     
     let [componentsConfig, setComponentsConfig] = useState(loadComponentsConfig() || componentsConfigDefault); // loaded || default layout
      
@@ -133,8 +138,18 @@ function Layout(){
         });
     }
 
-    function deleteComponent(id: string)
+    async function deleteComponent(id: string)
     {
+        setLayoutError("");
+        if (componentsConfig.some((component: Component_t) => component.id === id && component.type === "pdfReader")) {
+            try {
+                // Keep the component available for retry if deleting its file fails.
+                await deletePdf(id);
+            } catch {
+                setLayoutError("Could not delete the saved PDF. Please try deleting the component again.");
+                return;
+            }
+        }
         setComponentsConfig((prev) => {
             const index = prev.findIndex(c => c.id === id);
             if(index === -1) return prev; // not found
@@ -204,6 +219,10 @@ function Layout(){
     // addComponent takes a component_t config object as an argmunet to add to layout
     // these menu options define the configs to pass for each type of component
     let addElementOptions = [
+    {
+        label: "PDF reader",
+        action: () => addComponent({ type: "pdfReader", id: generateId() })
+    },
     {
         label: "Passage",
         action: () => {
@@ -279,6 +298,7 @@ function Layout(){
     let elements = <>
         <Header/>
         <div className="container">
+        {layoutError && <p className="passage-error" role="alert">{layoutError}</p>}
         {
             componentsConfig.map((c: Component_t) => {
 
@@ -300,6 +320,10 @@ function Layout(){
             // console.log(layoutControls);
 
             switch(c.type){
+                case "pdfReader":
+                    return <Suspense key={c.id} fallback={<section><p>Loading PDF reader…</p></section>}>
+                        <PdfReader layoutOptions={layoutOptions} id={c.id}/>
+                    </Suspense>;
                 case "passage":
                     return <LegacyPassage layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
                 case "notebox":
