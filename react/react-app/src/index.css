@@ -294,27 +294,27 @@ p
   transition: all 0.2s ease;
 }
 
-.passage2-body
+.passage-body
 {
   margin: 10px 0 10px;
   line-height: 1.6;
 }
 
 /* put each verse on its own line */
-.passage2-body .yv-v
+.passage-body .yv-v
 {
   display: block;
   height: 0;
   margin-bottom: 8px;
 }
 
-.passage2-body .p
+.passage-body .p
 {
   margin-bottom: 20px;
 }
 
 /* space the verse number away from the text */
-.passage2-body .yv-vlbl
+.passage-body .yv-vlbl
 {
   display: inline-block;
   margin-right: 10px;
@@ -322,14 +322,14 @@ p
 }
 
 /* error / empty state inside the passage body */
-.passage2-error
+.passage-error
 {
   color: #e0a3a3;
   font-style: italic;
 }
 
 /* copyright notice required per translation license */
-.passage2-copyright
+.passage-copyright
 {
   margin-top: 16px;
   padding-top: 10px;
@@ -341,7 +341,7 @@ p
   white-space: pre-line;
 }
 
-.passage2-commentary
+.passage-commentary
 {
   margin-top: 16px;
   padding-top: 10px;
@@ -350,14 +350,14 @@ p
   line-height: 1.5;
 }
 
-.passage2-commentary a
+.passage-commentary a
 {
   color: var(--text);
   text-underline-offset: 3px;
 }
 
-.passage2-body h2,
-.passage2-body h3
+.passage-body h2,
+.passage-body h3
 {
   margin: 16px 0 8px;
 }

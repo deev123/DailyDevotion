@@ -2,14 +2,16 @@ import { useEffect, useState } from "react";
 import Passage from "./Passage.tsx"
 import NoteBox from "./NoteBox.tsx"
 import VideoPlaylist from "./VideoPlaylist.tsx"
-import Passage2 from "./Passage2.tsx"
+import LegacyPassage from "./LegacyPassage.tsx"
 import Catechism from "./Catechism.tsx"
 import Header from "./Header.tsx"
 import Menu from "./Menu.tsx"
 
-// component types allowed in Layout
+// Persisted type identifiers intentionally keep their original meanings:
+// "passage" = LegacyPassage (Bible API), "passage2" = Passage (YouVersion).
+// Do not rename these values: existing devices store them in componentsConfig.
 
-type Passage_t = {
+type LegacyPassage_t = {
     type: "passage",
     id: string,
     list: string
@@ -26,7 +28,7 @@ type VideoPlaylist_t = {
     list: string
 }
 
-type Passage2_t = {
+type Passage_t = {
     type: "passage2",
     id: string,
     list: string
@@ -39,22 +41,21 @@ type Catechism_t = {
 }
 
 type Component_t =
-    | Passage_t
+    | LegacyPassage_t
     | NoteBox_t
     | VideoPlaylist_t
-    | Passage2_t
+    | Passage_t
     | Catechism_t
 
-// default layout to use as a fallback
-// variety for testing purposes for now
+// New layouts start with YouVersion readers; saved layouts take precedence.
 const componentsConfigDefault: Component_t[] = [
     {
-        type: "passage",
+        type: "passage2",
         id: "section1",
         list: "Psalms.txt",
     },
     {
-        type: "passage",
+        type: "passage2",
         id: "section2",
         list: "Bible_Chapters.txt",
     }
@@ -207,7 +208,7 @@ function Layout(){
         label: "Passage",
         action: () => {
             addComponent({
-                type: "passage",
+                type: "passage2",
                 id: generateId(),
                 list: "Bible_Chapters.txt"
             });
@@ -217,7 +218,7 @@ function Layout(){
         label: "Psalm",
         action: () => {
             addComponent({
-                type: "passage",
+                type: "passage2",
                 id: generateId(),
                 list: "Psalms.txt"
             });
@@ -244,12 +245,22 @@ function Layout(){
         }
     },
     {
-        label: "Passage 2",
+        label: "Legacy Passage",
         action: () => {
             addComponent({
-                type: "passage2",
+                type: "passage",
                 id: generateId(),
                 list: "Bible_Chapters.txt"
+            });
+        }
+    },
+    {
+        label: "Legacy Psalm",
+        action: () => {
+            addComponent({
+                type: "passage",
+                id: generateId(),
+                list: "Psalms.txt"
             });
         }
     },
@@ -290,13 +301,13 @@ function Layout(){
 
             switch(c.type){
                 case "passage":
-                    return <Passage layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
+                    return <LegacyPassage layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
                 case "notebox":
                     return <NoteBox layoutOptions={layoutOptions} id={c.id} key={c.id}/>;
                 case "videoPlaylist":
                     return <VideoPlaylist layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
                 case "passage2":
-                    return <Passage2 layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
+                    return <Passage layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
                 case "catechism":
                     return <Catechism layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
                 }

@@ -1,8 +1,9 @@
 import type { MenuOption } from "./Menu.tsx" // import type important for importing types
 import Menu from "./Menu.tsx"
-import { useState, useEffect, type ReactElement } from "react"
+import { useState, useEffect } from "react"
 import GooeyCheckbox from "./GooeyCheckbox.tsx"
 import confetti from "canvas-confetti"
+import YouVersionAPI from "./YouVersionAPI.ts"
 
 type PassageProps = {
     layoutOptions: MenuOption[],
@@ -10,68 +11,16 @@ type PassageProps = {
     list: string // file name or local store var name
 }
 
-// abstraction of api for getting the verses
-class BibleAPI {
+function commentaryUrl(reference: string): string | null {
+    const match = reference.trim().match(/^(.+?)\s+(\d+)$/);
+    if (!match || !YouVersionAPI.referenceToUsfm(reference)) return null;
 
-    // reference eg: "1 John 3", "Revelation 9" etc
-    static async fetchPassage(reference: string, translation = "WEB") {
-        if (!reference) return [];
-
-        try {
-            const url = `https://bible-api.com/${encodeURIComponent(reference)}?translation=${translation}`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error("Failed to fetch passage");
-
-            const data = await response.json();
-
-            if (data.verses) {
-                // turn API response into list of {verse, text} objects
-                return data.verses.map((v: any) => ({ verse: v.verse, text: v.text }));
-            }
-            else {
-                return [{ verse: "", text: "No passage found." }];
-            }
-        }
-        catch (err) {
-        console.error("BibleAPI error:", err);
-        return [{ verse: "", text: "Error fetching passage." }];
-        }
-    }
-}
-
-// class for rendering verses in a viewport
-class VerseRenderer {
-
-  // make WEB translation more like the NIV
-  static convertToLORD(text : string) {
-    // regex to find Yahweh, Yah, LORD GOD, GOD
-    const replacements: Record<string, string> = {
-      "\\bYahweh\\b": "(The) LORD",
-      "\\bYah\\b": "(The) LORD"
-    };
-
-    for (const pattern in replacements) {
-      const regex = new RegExp(pattern, "g");
-      text = text.replace(regex, replacements[pattern]);
-    }
-
-    // Optional: fix double spaces
-    return text.replace(/\s{2,}/g, " ");
-  }
-
-  // create jsx components for verses from the api
-  // sort of a component in a way
-  static createVerseComponents(verses: any): ReactElement[] {
-    let jsx = verses.map((v: any, i: number) => {
-        return (
-            <p key={`${i}`}>
-                <span className="verse-number">{v.verse ? `${v.verse}. ` : ""}</span>
-                {VerseRenderer.convertToLORD(v.text)}
-            </p>
-        );
-    });
-    return jsx;
-  }
+    const book = match[1] === "Psalm" ? "psalms" : match[1].toLowerCase().replace(/\s+/g, "-");
+    const chapter = Number(match[2]);
+    if (chapter < 1) return null;
+    // Bible Study Tools uses a different chapter filename for this book.
+    const filename = book === "song-of-solomon" ? `${book}-${chapter}` : String(chapter);
+    return `https://www.biblestudytools.com/commentaries/matthew-henry-complete/${book}/${filename}.html`;
 }
 
 // return as an array a list separated by newlines
@@ -97,15 +46,20 @@ async function loadList(filePath: string) {
 
 function Passage({ layoutOptions, id, list }: PassageProps){
 
-    // add additional options to menu if needed:
-    // const menuOptions = [...layoutOptions, ...extraOptions];
-    // console.log(layoutOptions);
-
     let [index, setIndex] = useState(0);
-    // elements of selection. e.g. loaded from Psalms.txt
+    // elements of selection. e.g. loaded from Bible_Chapters.txt
     let [listElements, setListElements] = useState<string[]>([]);
-    let [verses, setVerses] = useState<ReactElement[]>([]);
+    let [html, setHtml] = useState("");
+    let [error, setError] = useState("");
     let [checkboxChecked, setCheckboxChecked] = useState(false);
+
+    // bible version selection
+    let [versions, setVersions] = useState<{id: number, abbreviation: string, title: string, languageTag: string, languageName: string}[]>([]);
+    let [versionId, setVersionId] = useState<number | null>(null);
+    // copyright notice for the selected version
+    let [copyright, setCopyright] = useState("");
+    // localized book titles for the selected version: USFM code -> localized title e.g. GEN -> Génesis
+    let [bookTitles, setBookTitles] = useState<Map<string, string>>(new Map());
 
     function saveIndex(val: number) {
         localStorage.setItem(id + "_index", JSON.stringify(val));
@@ -116,6 +70,10 @@ function Passage({ layoutOptions, id, list }: PassageProps){
         {
             return Number.parseInt(JSON.parse(localStorage.getItem(id + "_index") ?? "0"));
         })
+    }
+
+    function saveVersion(val: number) {
+        localStorage.setItem(id + "_version", JSON.stringify(val));
     }
 
     function next() {
@@ -132,20 +90,24 @@ function Passage({ layoutOptions, id, list }: PassageProps){
         });
     }
 
-    // unused for now
-    // function prev() {
-    //     setIndex((prev) => {
-    //         let result = prev;
-    //         if(prev > 0){
-    //             result --;
-    //         }
-    //         else{
-    //             result = listElements.length - 1;
-    //         }
-    //         saveIndex(result);
-    //         return result;
-    //     });
-    // }
+    // produce a localized label for a reading list entry like "1 John 3".
+    // resolves the English book name to its localized title in the selected version.
+    function localizedLabel(reference: string): string {
+        if (bookTitles.size === 0) return reference;
+
+        const match = reference.trim().match(/^(.+?)\s+(\d+)$/);
+        if (!match) return reference;
+
+        const usfm = YouVersionAPI.referenceToUsfm(reference);
+        if (!usfm) return reference;
+
+        const bookCode = usfm.split(".")[0];
+        const chapter = match[2];
+        const localized = bookTitles.get(bookCode);
+        if (!localized) return reference;
+
+        return `${localized} ${chapter}`;
+    }
 
     // load the list when created
     useEffect(() => {
@@ -156,22 +118,73 @@ function Passage({ layoutOptions, id, list }: PassageProps){
         load();
     },[]);
 
-    // load index from local store if found on creation
+    // load index and version from local store when created
     useEffect(() => {
         loadIndex();
+
+        async function loadVersion() {
+            const stored = Number.parseInt(JSON.parse(localStorage.getItem(id + "_version") ?? "null"));
+            const available = await YouVersionAPI.fetchVersions();
+            setVersions(available);
+
+            if (available.length === 0) return;
+
+            // use stored version if still available, otherwise fall back to first
+            if (stored && available.some((v) => v.id === stored)) {
+                setVersionId(stored);
+            } else {
+                setVersionId(available[0].id);
+                saveVersion(available[0].id);
+            }
+        }
+        loadVersion();
     },[]);
 
-    // query the verses when selection or list changes
+    // load the copyright notice and localized book titles whenever the selected version changes
     useEffect(() => {
-        async function loadVerses() {
-            if (!listElements[index]) return;
-            const reference = listElements[index];
-            const data = await BibleAPI.fetchPassage(reference);
-            const jsx = VerseRenderer.createVerseComponents(data);
-            setVerses(jsx);
+        async function loadVersionData() {
+            if (!versionId) return;
+            const detail = await YouVersionAPI.fetchVersionDetail(versionId);
+            setCopyright(detail?.copyright ?? "");
+
+            const titles = await YouVersionAPI.fetchBookTitles(versionId);
+            setBookTitles(titles);
         }
-        loadVerses();
-    }, [index, listElements]);
+        setCopyright("");
+        setBookTitles(new Map());
+        loadVersionData();
+    }, [versionId]);
+
+    // query the chapter html when selection, list or version changes
+    useEffect(() => {
+        async function loadChapter() {
+            if (!listElements[index]) return;
+            if (!versionId) return;
+
+            const reference = listElements[index];
+            const usfm = YouVersionAPI.referenceToUsfm(reference);
+            if (!usfm) {
+                console.error(`Could not convert reference to USFM: ${reference}`);
+                setHtml("");
+                setError("Could not resolve this reading to a Bible reference.");
+                return;
+            }
+
+            setError("");
+            const result = await YouVersionAPI.fetchChapterHtml(versionId, usfm);
+            setHtml(result.html);
+            setError(result.error);
+        }
+        loadChapter();
+    }, [index, listElements, versionId]);
+
+    function onVersionChange(val: number) {
+        setVersionId(val);
+        saveVersion(val);
+    }
+
+    const reference = listElements[index];
+    const commentary = reference ? commentaryUrl(reference) : null;
 
     return (
     <section>
@@ -179,10 +192,10 @@ function Passage({ layoutOptions, id, list }: PassageProps){
             <select
                 className="reading-title-select"
                 value={index}
-                onChange={(e) => {setIndex(+e.target.value); saveIndex(+e.target.value)}}    
+                onChange={(e) => {setIndex(+e.target.value); saveIndex(+e.target.value)}}
             >
                 {listElements.map((element, i) => {
-                    return <option key={`${id}_${i}`} value={i}>{element}</option>
+                    return <option key={`${id}_${i}`} value={i}>{localizedLabel(element)}</option>
                 })}
             </select>
             <div>
@@ -191,16 +204,48 @@ function Passage({ layoutOptions, id, list }: PassageProps){
                 </Menu>
             </div>
         </div>
-        <div>
-            {verses.length > 0 ? verses : <p>...</p>}
+        {versions.length > 1 &&
+            <div className="version-header">
+                <select
+                    className="version-select"
+                    value={versionId ?? ""}
+                    onChange={(e) => {onVersionChange(+e.target.value)}}
+                    disabled={versionId === null}
+                >
+                    {[...new Map(versions.map((v) => [v.languageName, []])).keys()].map((langName) => {
+                        const langVersions = versions.filter((v) => v.languageName === langName);
+                        return (
+                            <optgroup key={`lang_${langName}`} label={langName}>
+                                {langVersions.map((v) => {
+                                    return <option key={`ver_${v.id}`} value={v.id}>{v.abbreviation} — {v.title}</option>
+                                })}
+                            </optgroup>
+                        );
+                    })}
+                </select>
+            </div>
+        }
+        <div className="passage-body">
+            {error ? <p className="passage-error">{error}</p>
+             : html ? <div dangerouslySetInnerHTML={{ __html: html }}/> : <p>...</p>}
         </div>
+        {copyright &&
+            <div className="passage-copyright">{copyright}</div>
+        }
+        {commentary &&
+            <div className="passage-commentary">
+                <a href={commentary} target="_blank" rel="noopener noreferrer">
+                    Matthew Henry commentary — {localizedLabel(reference)} (opens in a new tab)
+                </a>
+            </div>
+        }
         <div className="passage-footer">
             <GooeyCheckbox
                 isChecked={checkboxChecked}
                 onChange={async ()=>{
                     setCheckboxChecked(true);
                     confetti({particleCount: 50, spread: 1000, origin: { y: 0.5 }});
-                
+
                     await new Promise(resolve => setTimeout(resolve, 1000));
                     next();
 
