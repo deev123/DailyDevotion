@@ -11,6 +11,18 @@ type Passage2Props = {
     list: string // file name or local store var name
 }
 
+function commentaryUrl(reference: string): string | null {
+    const match = reference.trim().match(/^(.+?)\s+(\d+)$/);
+    if (!match || !YouVersionAPI.referenceToUsfm(reference)) return null;
+
+    const book = match[1].toLowerCase().replace(/\s+/g, "-");
+    const chapter = Number(match[2]);
+    if (chapter < 1) return null;
+    // Bible Study Tools uses a different chapter filename for this book.
+    const filename = book === "song-of-solomon" ? `${book}-${chapter}` : String(chapter);
+    return `https://www.biblestudytools.com/commentaries/matthew-henry-complete/${book}/${filename}.html`;
+}
+
 // return as an array a list separated by newlines
 async function loadList(filePath: string) {
     try {
@@ -171,6 +183,9 @@ function Passage2({ layoutOptions, id, list }: Passage2Props){
         saveVersion(val);
     }
 
+    const reference = listElements[index];
+    const commentary = reference ? commentaryUrl(reference) : null;
+
     return (
     <section>
         <div className="passage-header">
@@ -216,6 +231,13 @@ function Passage2({ layoutOptions, id, list }: Passage2Props){
         </div>
         {copyright &&
             <div className="passage2-copyright">{copyright}</div>
+        }
+        {commentary &&
+            <div className="passage2-commentary">
+                <a href={commentary} target="_blank" rel="noopener noreferrer">
+                    Matthew Henry commentary — {localizedLabel(reference)} (opens in a new tab)
+                </a>
+            </div>
         }
         <div className="passage-footer">
             <GooeyCheckbox

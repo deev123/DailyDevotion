@@ -341,6 +341,21 @@ p
   white-space: pre-line;
 }
 
+.passage2-commentary
+{
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 1px solid var(--outline);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.passage2-commentary a
+{
+  color: var(--text);
+  text-underline-offset: 3px;
+}
+
 .passage2-body h2,
 .passage2-body h3
 {
