@@ -1,3 +1,10 @@
+/* Animate one inherited offset so both headers share the same position each frame. */
+@property --header-offset {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 48px;
+}
+
 @font-face {
   font-family: "OpenDyslexic";
   src: url("./assets/fonts/OpenDyslexic-Regular.woff2") format("woff2");
@@ -31,6 +38,8 @@
 }
 
 :root {
+  --header-offset: 48px;
+  transition: --header-offset 0.2s ease;
   --font-family: Arial, sans-serif;
   --font-size: 100%;
   --letter-spacing: 0em;
@@ -84,7 +93,6 @@ button, input, select, textarea
     
 .container
 {
-  --component-header-top: 48px;
   width: 100%;
   padding: 49px 1px 1px; /* reserve space for the fixed top header */
   display: flex;
@@ -93,14 +101,14 @@ button, input, select, textarea
 }
 
 /* Follow the app header as it hides and returns while scrolling. */
-.top-header.header-hidden ~ .container
+:root:has(.top-header.header-hidden)
 {
-  --component-header-top: 0px;
+  --header-offset: 0px;
 }
 
-.top-header:has(:focus-visible) ~ .container
+:root:has(.top-header :focus-visible)
 {
-  --component-header-top: 48px;
+  --header-offset: 48px;
 }
 
 .container *
@@ -232,19 +240,17 @@ p
 .notes-header
 {
   position: sticky;
-  top: var(--component-header-top, 48px);
+  top: var(--header-offset);
   z-index: 10;
   background: var(--background);
   padding-top: 8px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--accent1);
-  transition: top 0.2s ease;
 }
 
 @media (prefers-reduced-motion: reduce)
 {
-  .passage-header,
-  .notes-header { transition: none; }
+  :root { transition: none; }
 }
 
 .passage-header
@@ -626,21 +632,18 @@ p
   box-sizing: border-box;
   background: color-mix(in srgb, var(--background), var(--text) 6%);
   border-bottom: 1px solid var(--accent1);
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  /* Stay opaque while sliding so the moving sticky heading never exposes text. */
+  transform: translateY(calc(var(--header-offset) - 48px));
 }
 
 .top-header.header-hidden
 {
-  transform: translateY(-100%);
-  opacity: 0;
   pointer-events: none;
 }
 
 /* Keyboard users can bring the settings button back by focusing it. */
 .top-header:has(:focus-visible)
 {
-  transform: translateY(0);
-  opacity: 1;
   pointer-events: auto;
 }
 
