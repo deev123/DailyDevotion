@@ -102,23 +102,17 @@ function Menu({ options , children}: MenuProps)
     <div ref={containerRef}>
         
         {trigger}{/* add trigger element (copied and onclick prop inserted) */} 
-        <div ref={menuRef} className="menu">
-            {
-            
-            /* add options from props */
-            // conditionally render if open
-            open && (
-                options.map((option, i) => {
-                    return (
+        {/* conditionally render if open */}
+        {open && (
+            <div ref={menuRef} className="menu">
+                {/* add options from props */}
+                {options.map((option, i) => (
                     <button key={i} onClick={() => {option.action(); setOpen(false);}}>
                         {option.label}
                     </button>
-                    )
-                })
-            )
-            
-            }
-        </div>
+                ))}
+            </div>
+        )}
     </div>
     )
 

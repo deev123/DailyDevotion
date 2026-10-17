@@ -84,11 +84,23 @@ button, input, select, textarea
     
 .container
 {
+  --component-header-top: 48px;
   width: 100%;
   padding: 49px 1px 1px; /* reserve space for the fixed top header */
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+/* Follow the app header as it hides and returns while scrolling. */
+.top-header.header-hidden ~ .container
+{
+  --component-header-top: 0px;
+}
+
+.top-header:has(:focus-visible) ~ .container
+{
+  --component-header-top: 48px;
 }
 
 .container *
@@ -214,6 +226,25 @@ p
 {
   /* transform: scale(1.05) translate(0px, -5px); */
   color: var(--text);
+}
+
+.passage-header,
+.notes-header
+{
+  position: sticky;
+  top: var(--component-header-top, 48px);
+  z-index: 10;
+  background: var(--background);
+  padding-top: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--accent1);
+  transition: top 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce)
+{
+  .passage-header,
+  .notes-header { transition: none; }
 }
 
 .passage-header
