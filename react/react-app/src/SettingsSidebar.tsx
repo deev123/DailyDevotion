@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 
 // read the current value of a theme CSS variable from <html>
 function readCssVar(name: string): string {
@@ -8,7 +9,7 @@ function readCssVar(name: string): string {
 // small settings sidebar: a hamburger button that opens a sliding panel.
 // currently the only settings are global text and background colours,
 // applied by overriding the theme CSS variables on <html>.
-function SettingsSidebar() {
+function SettingsSidebar({ onOpenChange }: { onOpenChange: (open: boolean) => void }) {
 
     const [open, setOpen] = useState(false);
     // tracks whether we're animating closed but not yet removed from the DOM
@@ -33,6 +34,7 @@ function SettingsSidebar() {
         setClosing(true);
         setTimeout(() => {
             setOpen(false);
+            onOpenChange(false);
             setClosing(false);
         }, 120); // slightly faster than the open animation
     }
@@ -42,6 +44,7 @@ function SettingsSidebar() {
             closeSidebar();
         } else {
             setOpen(true);
+            onOpenChange(true);
         }
     }
 
@@ -71,7 +74,6 @@ function SettingsSidebar() {
 
     return (
     <>
-        <header className="top-header" onClick={() => { if (open) closeSidebar(); }}>
             <button
                 className="material-icons hamburger-button"
                 aria-label="Settings"
@@ -80,9 +82,8 @@ function SettingsSidebar() {
             >
                 {open ? "close" : "menu"}
             </button>
-        </header>
 
-        {(open || closing) &&
+        {(open || closing) && createPortal(
             <div className={"sidebar-overlay" + (closing ? " closing" : "")} onClick={closeSidebar}>
                 <aside
                     className="settings-sidebar"
@@ -95,6 +96,11 @@ function SettingsSidebar() {
                 >
                     <div className="settings-sidebar-header">
                         <span>Settings</span>
+                        <button
+                            className="material-icons hamburger-button"
+                            aria-label="Close settings"
+                            onClick={closeSidebar}
+                        >close</button>
                     </div>
 
                     <label className="settings-row">
@@ -115,8 +121,8 @@ function SettingsSidebar() {
                         />
                     </label>
                 </aside>
-            </div>
-        }
+            </div>, document.body
+        )}
     </>
     )
 }

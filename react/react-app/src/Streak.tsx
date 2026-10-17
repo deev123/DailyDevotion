@@ -61,25 +61,13 @@ function Streak() {
         }
     }, []);
 
-    // fade the pill out once the page is scrolled away from the very top
-    let [faded, setFaded] = useState(false);
-
-    useEffect(() => {
-        function onScroll() {
-            setFaded(window.scrollY > 12);
-        }
-        onScroll();
-        window.addEventListener("scroll", onScroll, { passive: true });
-        return () => window.removeEventListener("scroll", onScroll);
-    }, []);
-
     return (
-        <section className={"streak-area" + (faded ? " streak-faded" : "")}>
+        <div className="streak-area">
             <div className="streak-pill">
                 <span className="streak-flame">🔥</span>
                 <span className="streak-count">{count}</span>
             </div>
-        </section>
+        </div>
     )
 }
 

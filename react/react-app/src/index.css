@@ -514,7 +514,7 @@ p
 
 /* ----- settings sidebar ----- */
 
-/* transparent header bar across the top, just reserving space for the settings button */
+/* The header moves as one unit across the top of the page. */
 .top-header
 {
   position: fixed;
@@ -526,10 +526,32 @@ p
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 8px;
   padding: 0 12px;
   box-sizing: border-box;
-  background: none;
-  border-bottom: none;
+  background: color-mix(in srgb, var(--background), var(--text) 6%);
+  border-bottom: 1px solid var(--accent1);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.top-header.header-hidden
+{
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Keyboard users can bring the settings button back by focusing it. */
+.top-header:has(:focus-visible)
+{
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce)
+{
+  .top-header { transition: none; }
 }
 
 .hamburger-button
@@ -552,24 +574,10 @@ p
   color: var(--text);
 }
 
-/* streak pill shown next to the top-right hamburger, sits at the very top of the
-   page and scrolls away with it, and is covered by the open sidebar */
-/* streak pill fixed next to the top-right hamburger; fades out when scrolled */
-.container .streak-area
+.streak-area
 {
-  position: fixed; /* stay at the top, beside the fixed hamburger */
-  top: 11px;
-  right: 66px; /* to the left of the fixed hamburger (46px wide + 12px edge pad + gap) */
-  z-index: 1; /* below the sidebar overlay (1999) so the menu covers it */
-  width: auto; /* override .container section { width: 100% } so the pill shrink-wraps */
-  opacity: 1;
-  pointer-events: none; /* never blocks the page */
-  transition: opacity 0.3s ease;
-}
-
-.container .streak-area.streak-faded
-{
-  opacity: 0;
+  width: auto;
+  pointer-events: none;
 }
 
 .streak-pill
@@ -603,7 +611,7 @@ p
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 1999;
+  z-index: 2001;
   display: flex;
   justify-content: flex-end;
   animation: sidebar-fade 0.2s ease;
