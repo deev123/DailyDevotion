@@ -939,7 +939,8 @@ p
 .pdf-navigation button,
 .pdf-navigation input,
 .pdf-zoom select,
-.pdf-file-button
+.pdf-file-button,
+.pdf-word-runner button
 {
   box-sizing: border-box;
   max-width: 100%;
@@ -957,6 +958,8 @@ p
   background: var(--surface-hover);
 }
 
+.pdf-word-runner button:focus-visible,
+.pdf-word-runner input:focus-visible,
 .pdf-file-button:focus-within,
 .pdf-navigation button:focus-visible,
 .pdf-navigation input:focus-visible,
@@ -966,6 +969,7 @@ p
   outline-offset: 2px;
 }
 
+.pdf-word-runner button:disabled,
 .pdf-navigation button:disabled,
 .pdf-control-disabled
 {
@@ -1024,3 +1028,53 @@ p
   cursor: pointer;
 }
 
+
+.pdf-word-runner { margin: 12px 0; }
+
+.pdf-runner-toggle {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pdf-runner-panel {
+  padding: 16px;
+  border: 1px solid var(--outline);
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.pdf-runner-word {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 110px;
+  padding: 12px;
+  background: var(--accent1);
+  border-radius: 8px;
+  font-size: 2rem;
+  font-weight: 600;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.pdf-runner-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.pdf-runner-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 0.9rem;
+}
+
+.pdf-runner-slider input {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--brand);
+}

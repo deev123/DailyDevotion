@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 // Include PDF.js compatibility helpers for browsers such as Samsung Internet.
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist/legacy/build/pdf.mjs"
 import type { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist"
 import workerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url"
 import Menu from "./Menu.tsx"
 import type { MenuOption } from "./Menu.tsx"
-import { loadPdf, savePdf, savePdfPage } from "./pdfStorage.ts"
+import { loadPdf, savePdf, savePdfProgress } from "./pdfStorage.ts"
 
 GlobalWorkerOptions.workerSrc = workerUrl;
 
@@ -21,7 +21,17 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
     const [busy, setBusy] = useState(true);
     const [rendering, setRendering] = useState(false);
     const [error, setError] = useState("");
-    const [pageText, setPageText] = useState("");
+    const [textPage, setTextPage] = useState<{ pdf: PDFDocumentProxy; page: number; text: string } | null>(null);
+    const [wordIndex, setWordIndex] = useState(0);
+    const [speed, setSpeed] = useState(300);
+    const [running, setRunning] = useState(false);
+    const [rampWords, setRampWords] = useState(0);
+    const [runnerOpen, setRunnerOpen] = useState(false);
+    const textReady = textPage?.pdf === pdf && textPage?.page === page;
+    const pageText = textReady ? textPage.text : "";
+    const words = useMemo(() => pageText.match(/\S+/gu) ?? [], [pageText]);
+    const currentWord = Math.min(wordIndex, Math.max(0, words.length - 1));
+    const currentSpeed = Math.round(Math.min(speed, Math.min(100, speed) + rampWords * 5));
     const viewportRef = useRef<HTMLDivElement>(null);
     const pageRef = useRef<HTMLDivElement>(null);
     const loadingRef = useRef<PDFDocumentLoadingTask | null>(null);
@@ -54,6 +64,8 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
                 const document = await openFile(saved.file);
                 if (cancelled) { void document.loadingTask.destroy(); return; }
                 const restoredPage = Math.min(saved.page, document.numPages);
+                setWordIndex(saved.word);
+                setSpeed(saved.speed);
                 setPdf(document);
                 setName(saved.name);
                 setPage(restoredPage);
@@ -88,7 +100,6 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
         // Each render gets its own canvas, so quick page changes cannot clash.
         const canvas = document.createElement("canvas");
         setRendering(true);
-        setPageText("");
         pageRef.current.replaceChildren();
 
         async function renderPage() {
@@ -112,13 +123,7 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
                 await renderTask.promise;
                 if (cancelled) return;
                 pageRef.current?.replaceChildren(canvas);
-                try {
-                    const text = await currentPage.getTextContent();
-                    if (!cancelled) setPageText(text.items.map((item) => "str" in item ? item.str + (item.hasEOL ? "\n" : " ") : "").join(""));
-                } catch (error) {
-                    // The text version is optional; keep a successfully rendered page visible.
-                    if (!cancelled) console.warn("Could not extract PDF page text:", error);
-                }
+
             } catch (error) {
                 if (!cancelled) {
                     console.error("Could not render PDF page:", error);
@@ -135,12 +140,64 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
         };
     }, [pdf, page, width, zoom, name]);
 
+    useEffect(() => {
+        if (!pdf) return;
+        let cancelled = false;
+        void pdf.getPage(page).then((pdfPage) => pdfPage.getTextContent()).then((content) => {
+            if (!cancelled) setTextPage({ pdf, page, text: content.items.map((item) =>
+                "str" in item ? item.str + (item.hasEOL ? "\n" : " ") : "").join("") });
+        }).catch((error) => {
+            if (!cancelled) {
+                console.warn("Could not extract PDF page text:", error);
+                setTextPage({ pdf, page, text: "" });
+                setRunning(false);
+            }
+        });
+        return () => { cancelled = true; };
+    }, [pdf, page]);
+
+    useEffect(() => {
+        if (!pdf || busy) return;
+        // Save each displayed word, including while playing, so closing the widget
+        // does not depend on an unreliable unload handler.
+        void savePdfProgress(id, page, textReady ? currentWord : wordIndex, speed).catch(() => {
+            if (mounted.current) setError("Your reading position could not be saved. Check that browser storage is available.");
+        });
+    }, [id, pdf, busy, page, wordIndex, currentWord, textReady, speed]);
+
+    useEffect(() => {
+        if (!running || busy || !pdf || !textReady) return;
+        const timer = window.setTimeout(() => {
+            if (!words.length) {
+                setRunning(false);
+            } else if (currentWord < words.length - 1) {
+                setWordIndex(currentWord + 1);
+                setRampWords((count) => count + 1);
+            } else if (page < pdf.numPages) {
+                setWordIndex(0);
+                setPage(page + 1);
+                setPageInput(String(page + 1));
+                setRampWords((count) => count + 1);
+            } else {
+                setRunning(false);
+            }
+        }, 60000 / currentSpeed);
+        return () => window.clearTimeout(timer);
+    }, [running, busy, pdf, textReady, words.length, currentWord, page, currentSpeed]);
+
+    useEffect(() => {
+        const pauseWhenHidden = () => { if (document.hidden) setRunning(false); };
+        document.addEventListener("visibilitychange", pauseWhenHidden);
+        return () => document.removeEventListener("visibilitychange", pauseWhenHidden);
+    }, []);
+
     async function chooseFile(file: File) {
         setError("");
         if (!file.name.toLowerCase().endsWith(".pdf") && file.type !== "application/pdf") {
             setError("Please choose a PDF file.");
             return;
         }
+        setRunning(false);
         setBusy(true);
         const previousTask = loadingRef.current;
         let nextDocument: PDFDocumentProxy | undefined;
@@ -150,6 +207,8 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
             // Only replace the current book once the new PDF can be opened and saved.
             await savePdf(id, file);
             if (!mounted.current) { void nextDocument.loadingTask.destroy(); return; }
+            setWordIndex(0);
+            setRampWords(0);
             setPdf(nextDocument);
             setName(file.name);
             setPage(1);
@@ -171,12 +230,13 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
     function goToPage(value: number) {
         if (!pdf || busy) return;
         const next = Number.isFinite(value) ? Math.min(pdf.numPages, Math.max(1, Math.trunc(value))) : page;
+        if (next === page) return;
+        setRunning(false);
+        setWordIndex(0);
         setPage(next);
         setPageInput(String(next));
         setError("");
-        void savePdfPage(id, next).catch(() => {
-            if (mounted.current) setError("This page could not be saved. Your reading position may not be restored next time.");
-        });
+
     }
 
     return (
@@ -217,6 +277,47 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
                     <option value="2">200%</option>
                 </select></label>}
             </div>
+            {pdf && <div className="pdf-word-runner">
+                <button className="pdf-runner-toggle" aria-expanded={runnerOpen} onClick={() => {
+                    setRunnerOpen(!runnerOpen);
+                    setRunning(false);
+                }}>Word runner {runnerOpen ? "▴" : "▾"}</button>
+                {runnerOpen && <div className="pdf-runner-panel">
+                    <div className="pdf-runner-word" aria-label="Current word">{textReady ? (words[currentWord] || "—") : "…"}</div>
+                    <p className="pdf-storage-note">{!textReady ? "Loading words…" : words.length
+                        ? `Page ${page} · Word ${currentWord + 1} of ${words.length}`
+                        : "No selectable text on this page. Choose another page to continue."}</p>
+                    <div className="pdf-runner-controls">
+                        <button disabled={busy || !words.length} onClick={() => {
+                            setRunning(!running);
+                            setRampWords(0);
+                        }}>{running ? "Pause" : "Play"}</button>
+                        <button disabled={busy || !words.length || currentWord === 0} onClick={() => {
+                            setRunning(false);
+                            setWordIndex(Math.max(0, currentWord - 10));
+                        }}>Back 10 words</button>
+                        <button disabled={busy || !words.length} onClick={() => {
+                            setRunning(false);
+                            setWordIndex(0);
+                        }}>Restart page</button>
+                    </div>
+                    <label className="pdf-runner-slider">Speed: {speed} words/min
+                        <input type="range" min="100" max="800" step="25" value={speed}
+                            disabled={busy} onChange={(event) => setSpeed(Number(event.target.value))} />
+                    </label>
+                    <p className="pdf-storage-note">{running ? `Reading at ${currentSpeed} words/min. ` : ""}
+                        Starts at 100 words/min and gradually builds to your chosen speed.</p>
+                    <label className="pdf-runner-slider">Word position
+                        <input type="range" min="0" max={Math.max(0, words.length - 1)} value={currentWord}
+                            disabled={busy || !words.length} onChange={(event) => {
+                                setRunning(false);
+                                setWordIndex(Number(event.target.value));
+                            }} />
+                    </label>
+                    {textReady && words.length > 0 && currentWord === words.length - 1 && page === pdf.numPages && !running
+                        && <p className="pdf-storage-note">End of book.</p>}
+                </div>}
+            </div>}
             {!pdf && !busy && <p className="pdf-storage-note">Choose a book to start reading. Your file and page will be saved on this device.</p>}
             {error && <p className="passage-error" role="alert">{error}</p>}
             {(busy || rendering) && <p role="status">{busy ? "Opening PDF…" : "Loading page…"}</p>}

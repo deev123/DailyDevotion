@@ -30,14 +30,21 @@ function completed(transaction: IDBTransaction): Promise<void> {
     });
 }
 
-export async function loadPdf(id: string): Promise<{ file: Blob; name: string; page: number } | null> {
+export async function loadPdf(id: string): Promise<{ file: Blob; name: string; page: number; word: number; speed: number } | null> {
     const db = await openDatabase();
     const transaction = db.transaction([FILES, PAGES], "readonly");
     const file = transaction.objectStore(FILES).get(id);
     const page = transaction.objectStore(PAGES).get(id);
     await completed(transaction);
     if (!file.result) return null;
-    return { ...file.result, page: Number.isInteger(page.result) && page.result > 0 ? page.result : 1 };
+    // Older readers stored just a page number in this store.
+    const progress = typeof page.result === "number" ? { page: page.result } : (page.result ?? {});
+    return {
+        ...file.result,
+        page: Number.isInteger(progress.page) && progress.page > 0 ? progress.page : 1,
+        word: Number.isInteger(progress.word) && progress.word >= 0 ? progress.word : 0,
+        speed: Number.isFinite(progress.speed) ? Math.min(800, Math.max(100, progress.speed)) : 300,
+    };
 }
 
 export async function savePdf(id: string, file: File): Promise<void> {
@@ -50,11 +57,11 @@ export async function savePdf(id: string, file: File): Promise<void> {
     await completed(transaction);
 }
 
-export async function savePdfPage(id: string, page: number): Promise<void> {
+export async function savePdfProgress(id: string, page: number, word: number, speed: number): Promise<void> {
     const db = await openDatabase();
     if (deleted.has(id)) return;
     const transaction = db.transaction(PAGES, "readwrite");
-    transaction.objectStore(PAGES).put(page, id);
+    transaction.objectStore(PAGES).put({ page, word, speed }, id);
     await completed(transaction);
 }
 
