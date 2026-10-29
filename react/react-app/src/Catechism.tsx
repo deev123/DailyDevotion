@@ -1,5 +1,6 @@
 import type { MenuOption } from "./Menu.tsx" // import type important for importing types
 import Menu from "./Menu.tsx"
+import ListPicker from "./ListPicker.tsx"
 import { useState, useEffect } from "react"
 import GooeyCheckbox from "./GooeyCheckbox.tsx"
 import confetti from "canvas-confetti"
@@ -78,15 +79,12 @@ function Catechism({ layoutOptions, id, list }: CatechismProps){
     return (
     <section>
         <div className="passage-header">
-            <select
-                className="reading-title-select"
+            <ListPicker
+                title="Select question"
+                options={entries.map((element, i) => ({ value: i, label: element.Question }))}
                 value={index}
-                onChange={(e) => {setIndex(+e.target.value); saveIndex(+e.target.value)}}
-            >
-                {entries.map((entry, i) => {
-                    return <option key={`${id}_${i}`} value={i}>{entry.Question}</option>
-                })}
-            </select>
+                onChange={(nextIndex) => { setIndex(nextIndex); saveIndex(nextIndex); }}
+            />
             <div>
                 <Menu options={layoutOptions}>
                     <button className="dots-button">⋮</button>

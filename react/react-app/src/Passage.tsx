@@ -1,5 +1,7 @@
 import type { MenuOption } from "./Menu.tsx" // import type important for importing types
 import Menu from "./Menu.tsx"
+import PassagePicker from "./PassagePicker.tsx"
+import ListPicker from "./ListPicker.tsx"
 import SpeechPassage from "./SpeechPassage.tsx"
 import { useState, useEffect } from "react"
 import GooeyCheckbox from "./GooeyCheckbox.tsx"
@@ -202,15 +204,12 @@ function Passage({ layoutOptions, id, list, speech = false }: PassageProps){
     return (
     <section>
         <div className="passage-header">
-            <select
-                className="reading-title-select"
+            <PassagePicker
+                references={listElements}
                 value={index}
-                onChange={(e) => {setIndex(+e.target.value); saveIndex(+e.target.value)}}
-            >
-                {listElements.map((element, i) => {
-                    return <option key={`${id}_${i}`} value={i}>{localizedLabel(element)}</option>
-                })}
-            </select>
+                onChange={(nextIndex) => { setIndex(nextIndex); saveIndex(nextIndex); }}
+                formatReference={localizedLabel}
+            />
             <div>
                 <Menu options={layoutOptions}>
                     <button className="dots-button">⋮</button>
@@ -219,23 +218,18 @@ function Passage({ layoutOptions, id, list, speech = false }: PassageProps){
         </div>
         {versions.length > 1 &&
             <div className="version-header">
-                <select
+                <ListPicker
+                    title="Select translation"
                     className="version-select"
-                    value={versionId ?? ""}
-                    onChange={(e) => {onVersionChange(+e.target.value)}}
+                    options={versions.map(version => ({
+                        value: version.id,
+                        label: `${version.abbreviation} — ${version.title}`,
+                        group: version.languageName,
+                    }))}
+                    value={versionId}
+                    onChange={onVersionChange}
                     disabled={versionId === null}
-                >
-                    {[...new Map(versions.map((v) => [v.languageName, []])).keys()].map((langName) => {
-                        const langVersions = versions.filter((v) => v.languageName === langName);
-                        return (
-                            <optgroup key={`lang_${langName}`} label={langName}>
-                                {langVersions.map((v) => {
-                                    return <option key={`ver_${v.id}`} value={v.id}>{v.abbreviation} — {v.title}</option>
-                                })}
-                            </optgroup>
-                        );
-                    })}
-                </select>
+                />
             </div>
         }
         <div className="passage-body">

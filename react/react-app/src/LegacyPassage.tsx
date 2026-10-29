@@ -1,5 +1,6 @@
 import type { MenuOption } from "./Menu.tsx" // import type important for importing types
 import Menu from "./Menu.tsx"
+import PassagePicker from "./PassagePicker.tsx"
 import { useState, useEffect, type ReactElement } from "react"
 import GooeyCheckbox from "./GooeyCheckbox.tsx"
 import confetti from "canvas-confetti"
@@ -176,15 +177,11 @@ function LegacyPassage({ layoutOptions, id, list }: LegacyPassageProps){
     return (
     <section>
         <div className="passage-header">
-            <select
-                className="reading-title-select"
+            <PassagePicker
+                references={listElements}
                 value={index}
-                onChange={(e) => {setIndex(+e.target.value); saveIndex(+e.target.value)}}    
-            >
-                {listElements.map((element, i) => {
-                    return <option key={`${id}_${i}`} value={i}>{element}</option>
-                })}
-            </select>
+                onChange={(nextIndex) => { setIndex(nextIndex); saveIndex(nextIndex); }}
+            />
             <div>
                 <Menu options={layoutOptions}>
                     <button className="dots-button">⋮</button>

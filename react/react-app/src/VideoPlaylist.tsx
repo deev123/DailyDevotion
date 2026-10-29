@@ -1,5 +1,6 @@
 import type { MenuOption } from "./Menu.tsx" // import type important for importing types
 import Menu from "./Menu.tsx"
+import ListPicker from "./ListPicker.tsx"
 import { useEffect, useState } from "react"
 
 type VideoPlaylistProps = {
@@ -90,15 +91,12 @@ function VideoPlaylist({ layoutOptions, id, list }: VideoPlaylistProps){
 
     return <section>
         <div className="passage-header">
-            <select
-                className="reading-title-select"
+            <ListPicker
+                title="Select video"
+                options={listElements.map((element, i) => ({ value: i, label: element.title }))}
                 value={index}
-                onChange={(e) => {setIndex(+e.target.value); saveIndex(+e.target.value)}}    
-            >
-                {listElements.map((element, i) => {
-                    return <option key={`${id}_${i}`} value={i}>{element.title}</option>
-                })}
-            </select>
+                onChange={(nextIndex) => { setIndex(nextIndex); saveIndex(nextIndex); }}
+            />
             <div>
                 <Menu options={layoutOptions}>
                     <button className="dots-button">⋮</button>
