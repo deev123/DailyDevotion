@@ -10,10 +10,12 @@ type Props = {
     className?: string;
     disabled?: boolean;
     describedBy?: string;
+    triggerIcon?: string;
+    triggerLabel?: string;
 };
 
 /** A flat list, or language-style accordion groups, with selection owned by the caller. */
-export default function ListPicker({ title, options, value, onChange, className = "reading-title-select", disabled = false, describedBy }: Props) {
+export default function ListPicker({ title, options, value, onChange, className = "reading-title-select", disabled = false, describedBy, triggerIcon, triggerLabel }: Props) {
     const id = useId();
     const dialogRef = useRef<HTMLDialogElement>(null);
     const [open, setOpen] = useState(false);
@@ -54,8 +56,10 @@ export default function ListPicker({ title, options, value, onChange, className 
         <button type="button" className={`${className} passage-picker-trigger`}
             disabled={disabled || !options.length} aria-haspopup="dialog" aria-expanded={open}
             aria-controls={`${id}-dialog`} aria-describedby={describedBy} aria-label={`${title}: ${selected?.label ?? "None selected"}`} onClick={show}>
-            <span>{selected?.label ?? title}</span>
-            <span className="material-icons" aria-hidden="true">expand_more</span>
+            {triggerLabel !== undefined ? <span>{triggerLabel}</span> : triggerIcon ? <span className="material-icons" aria-hidden="true">{triggerIcon}</span> : <>
+                <span>{selected?.label ?? title}</span>
+                <span className="material-icons" aria-hidden="true">expand_more</span>
+            </>}
         </button>
         {createPortal(<dialog ref={dialogRef} id={`${id}-dialog`} className="passage-picker list-picker"
             aria-labelledby={`${id}-title`} onClose={() => setOpen(false)}

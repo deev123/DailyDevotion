@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import Passage from "./Passage.tsx"
+import IntegratedSpeechPassage from "./IntegratedSpeechPassage.tsx"
 import NoteBox from "./NoteBox.tsx"
 import VideoPlaylist from "./VideoPlaylist.tsx"
 import LegacyPassage from "./LegacyPassage.tsx"
@@ -48,6 +49,7 @@ type Component_t =
     | NoteBox_t
     | VideoPlaylist_t
     | { type: "speechPassage"; id: string; list: string }
+    | { type: "integratedSpeechPassage"; id: string; list: string }
     | Passage_t
     | Catechism_t
     | { type: "pdfReader"; id: string }
@@ -171,9 +173,11 @@ function Layout(){
                     localStorage.removeItem(id + "_index");
                     localStorage.removeItem(id + "_videoPositions");
                     break;
+                case "integratedSpeechPassage":
                 case "speechPassage":
                     localStorage.removeItem(id + "_voice");
                     localStorage.removeItem(id + "_speechRate");
+                    localStorage.removeItem(id + "_speechPosition");
                     localStorage.removeItem(id + "_index");
                     localStorage.removeItem(id + "_version");
                     break;
@@ -227,6 +231,10 @@ function Layout(){
     // addComponent takes a component_t config object as an argmunet to add to layout
     // these menu options define the configs to pass for each type of component
     let addElementOptions = [
+    {
+        label: "Passage with read aloud (test)",
+        action: () => addComponent({ type: "integratedSpeechPassage", id: generateId(), list: "Bible_Chapters.txt" })
+    },
     {
         label: "Read aloud passage (demo)",
         action: () => addComponent({ type: "speechPassage", id: generateId(), list: "Bible_Chapters.txt" })
@@ -342,6 +350,8 @@ function Layout(){
                     return <NoteBox layoutOptions={layoutOptions} id={c.id} key={c.id}/>;
                 case "videoPlaylist":
                     return <VideoPlaylist layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
+                case "integratedSpeechPassage":
+                    return <IntegratedSpeechPassage layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
                 case "speechPassage":
                     return <Passage speech layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
                 case "passage2":

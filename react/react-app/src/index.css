@@ -280,6 +280,40 @@ p
   align-items: center;
 }
 
+/* Keep the reference visible while the three compact actions stay on one row. */
+.integrated-passage-header { gap: 2px; }
+.integrated-passage-header .reading-title-select {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+}
+.integrated-passage-header .passage-picker-trigger > span:first-child {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.integrated-passage-header .integrated-translation-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 1 auto;
+  min-width: 40px;
+  max-width: 64px;
+  min-height: 40px;
+  padding: 4px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--background);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+}
+.integrated-passage-header .integrated-translation-button:hover { background: var(--accent1); color: var(--text); }
+.integrated-passage-header .dots-button { width: 40px; }
+.integrated-player-trigger { flex: 0 0 40px; width: 40px; }
+
 .notes-header
 {
   display: flex;
@@ -1131,6 +1165,74 @@ p
   background: var(--accent1);
 }
 
+.speech-disclosure {
+  position: sticky;
+  top: calc(var(--header-offset) + var(--passage-header-height, 52px));
+  z-index: 9;
+  margin-bottom: 8px;
+  padding: 2px 0;
+  background: var(--background);
+}
+.speech-disclosure:not(.speech-disclosure-open) { display: none; }
+.speech-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--background);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.speech-icon-button:hover { background: var(--accent1); color: var(--text); }
+.speech-icon-button:disabled { opacity: 0.5; cursor: default; }
+.speech-icon-button.speech-playing {
+  background: var(--text);
+  color: var(--background);
+  border-color: var(--text);
+}
+.speech-player-toggle[aria-expanded="true"] {
+  background: var(--accent1);
+  border-color: var(--outline);
+  color: var(--text);
+}
+.speech-mini-player {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 4px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--accent1);
+}
+.speech-mini-player::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  right: 56px;
+  width: 10px;
+  height: 10px;
+  background: var(--accent1);
+  border-left: 1px solid var(--border-subtle);
+  border-top: 1px solid var(--border-subtle);
+  transform: rotate(45deg);
+}
+.speech-mini-position { display: flex; align-items: center; gap: 6px; flex: 1 1 100px; min-width: 0; font-size: 0.75rem; color: var(--text-muted); }
+.speech-mini-position span { flex-shrink: 0; white-space: nowrap; }
+.speech-mini-position input { display: block; flex: 1; width: 100%; min-width: 0; margin: 0; }
+.speech-mini-player .passage-error { flex-basis: 100%; font-size: 0.875rem; }
+.speech-settings-content > span { display: block; margin-bottom: 8px; }
+.speech-settings-content .version-select { width: 100%; }
+.speech-settings-content label { display: flex; flex-direction: column; gap: 4px; margin-top: 16px; }
+.speech-settings-content input[type="range"] { width: 100%; margin: 0; }
+
 .speech-controls label {
   display: flex;
   flex-direction: column;
@@ -1156,13 +1258,23 @@ p
 
 .speech-controls input { width: 100%; margin: 0; accent-color: var(--brand); }
 .speech-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.speech-controls .speech-position { margin-top: 12px; }
 .speech-controls button { cursor: pointer; }
 .speech-controls button:enabled:hover { background: var(--surface-hover); }
 .speech-controls button:disabled { opacity: 0.5; cursor: default; }
 .speech-controls :is(button, select, input):focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
 .speech-caption { font-size: 0.8rem; line-height: 1.5; color: var(--text-muted); }
 .speech-text { line-height: 1.8; overflow-wrap: anywhere; }
-.speech-sentence-active { background: color-mix(in srgb, var(--brand), transparent 75%); border-radius: 3px; }
+.speech-sentence-active {
+  background: color-mix(in srgb, var(--background), var(--text) 24%);
+  text-decoration: underline;
+  text-decoration-color: var(--text-muted);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+  border-radius: 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
 .speech-sentence-active mark { background: var(--text); color: var(--background); border-radius: 3px; }
 
 /* The picker lives in the top layer, outside sticky headers and reader widths. */
