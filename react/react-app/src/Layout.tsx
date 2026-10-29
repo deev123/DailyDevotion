@@ -12,7 +12,7 @@ import { deletePdf } from "./pdfStorage.ts"
 const PdfReader = lazy(() => import("./PdfReader.tsx"));
 
 // Persisted type identifiers intentionally keep their original meanings:
-// "passage" = LegacyPassage (Bible API), "passage2" = Passage (YouVersion).
+// "passage" = LegacyPassage (Bible API), "passage2" = YouVersion reader.
 // Do not rename these values: existing devices store them in componentsConfig.
 
 type LegacyPassage_t = {
@@ -175,13 +175,10 @@ function Layout(){
                     break;
                 case "integratedSpeechPassage":
                 case "speechPassage":
+                case "passage2":
                     localStorage.removeItem(id + "_voice");
                     localStorage.removeItem(id + "_speechRate");
                     localStorage.removeItem(id + "_speechPosition");
-                    localStorage.removeItem(id + "_index");
-                    localStorage.removeItem(id + "_version");
-                    break;
-                case "passage2":
                     localStorage.removeItem(id + "_index");
                     localStorage.removeItem(id + "_version");
                     break;
@@ -231,10 +228,6 @@ function Layout(){
     // addComponent takes a component_t config object as an argmunet to add to layout
     // these menu options define the configs to pass for each type of component
     let addElementOptions = [
-    {
-        label: "Passage with read aloud (test)",
-        action: () => addComponent({ type: "integratedSpeechPassage", id: generateId(), list: "Bible_Chapters.txt" })
-    },
     {
         label: "Read aloud passage (demo)",
         action: () => addComponent({ type: "speechPassage", id: generateId(), list: "Bible_Chapters.txt" })
@@ -355,7 +348,7 @@ function Layout(){
                 case "speechPassage":
                     return <Passage speech layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
                 case "passage2":
-                    return <Passage layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
+                    return <IntegratedSpeechPassage layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
                 case "catechism":
                     return <Catechism layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
                 }

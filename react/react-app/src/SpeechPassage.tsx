@@ -227,7 +227,7 @@ export default function SpeechPassage({ html, id, language, integrated = false, 
         setStatus("paused");
     }
 
-    function play(start: number, playbackRate = rate, startOffset = 0) {
+    function play(start: number, playbackRate = rate, startOffset = 0, playbackVoice: SpeechSynthesisVoice | null = voice ?? null) {
         if (!supported || !sentences.length) return;
         start = Math.min(Math.max(0, start), sentences.length - 1);
         const synth = window.speechSynthesis;
@@ -264,8 +264,8 @@ export default function SpeechPassage({ html, id, language, integrated = false, 
             const offset = Math.min(requestedOffset, sentences[index].text.length);
             wordStartRef.current = offset || null;
             const utterance = new SpeechSynthesisUtterance(sentences[index].text.slice(offset));
-            utterance.voice = voice ?? null;
-            utterance.lang = voice?.lang || language || "en";
+            utterance.voice = playbackVoice;
+            utterance.lang = playbackVoice?.lang || language || "en";
             utterance.rate = playbackRate;
             utteranceRef.current = utterance;
             let lastProgress = Date.now();
@@ -350,12 +350,23 @@ export default function SpeechPassage({ html, id, language, integrated = false, 
         }
     }
 
+    function changeVoice(nextVoice: SpeechSynthesisVoice) {
+        const key = voiceKey(nextVoice);
+        if (voice && voiceKey(voice) === key) return;
+        const offset = wordStartRef.current ?? 0;
+        setSelectedVoice(key);
+        savePreference("_voice", key);
+        // A voice can't be changed on an utterance already being spoken.
+        if (status === "playing") play(positionRef.current, rate, offset, nextVoice);
+    }
+
     const controls = <div className="speech-controls" role="group" aria-label="Read aloud controls">
             {!integrated && <p className="speech-caption">Read aloud demo</p>}
             {!supported ? <p role="status">Text to speech is not available in this browser.</p> : <>
                 <label>Voice
                     <select value={voice ? voiceKey(voice) : ""} onChange={event => {
-                        pause(); setSelectedVoice(event.target.value); savePreference("_voice", event.target.value);
+                        const nextVoice = voices.find(item => voiceKey(item) === event.target.value);
+                        if (nextVoice) changeVoice(nextVoice);
                     }}>
                         {!voices.length && <option value="">Browser default (voices loading)</option>}
                         {voices.map((item, index) => <option key={`${voiceKey(item)}-${index}`} value={voiceKey(item)}>
@@ -438,10 +449,8 @@ export default function SpeechPassage({ html, id, language, integrated = false, 
                         value: index, label: `${item.name} — ${item.lang}${item.localService ? " · Local" : " · Online"}`,
                     }))} value={voice ? voices.indexOf(voice) : null} disabled={!voices.length}
                         onChange={index => {
-                            if (status === "playing") pause();
-                            const key = voiceKey(voices[index]);
-                            setSelectedVoice(key);
-                            savePreference("_voice", key);
+                            const nextVoice = voices[index];
+                            if (nextVoice) changeVoice(nextVoice);
                         }} />
                     {!voices.length && <p className="speech-caption">Browser voices are loading.</p>}
                     <label>Speed: {rate.toFixed(1)}×
