@@ -153,17 +153,21 @@ function Passage({ layoutOptions, id, list, speech = false }: PassageProps){
 
     // load the copyright notice and localized book titles whenever the selected version changes
     useEffect(() => {
+        let cancelled = false;
         async function loadVersionData() {
             if (!versionId) return;
-            const detail = await YouVersionAPI.fetchVersionDetail(versionId);
+            const [detail, titles] = await Promise.all([
+                YouVersionAPI.fetchVersionDetail(versionId),
+                YouVersionAPI.fetchBookTitles(versionId),
+            ]);
+            if (cancelled) return;
             setCopyright(detail?.copyright ?? "");
-
-            const titles = await YouVersionAPI.fetchBookTitles(versionId);
             setBookTitles(titles);
         }
         setCopyright("");
         setBookTitles(new Map());
         loadVersionData();
+        return () => { cancelled = true; };
     }, [versionId]);
 
     // query the chapter html when selection, list or version changes
