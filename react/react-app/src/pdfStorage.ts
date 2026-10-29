@@ -4,6 +4,7 @@ const FILES = "files";
 const PAGES = "pages";
 let database: Promise<IDBDatabase> | undefined;
 const deleted = new Set<string>();
+let resetting = false;
 
 function openDatabase(): Promise<IDBDatabase> {
     if (!database) {
@@ -49,6 +50,7 @@ export async function loadPdf(id: string): Promise<{ file: Blob; name: string; p
 
 export async function savePdf(id: string, file: File): Promise<void> {
     const db = await openDatabase();
+    if (resetting) throw new Error("App data is being deleted.");
     if (deleted.has(id)) throw new Error("This PDF reader has been deleted.");
     // Replacing a book and resetting its page must succeed together.
     const transaction = db.transaction([FILES, PAGES], "readwrite");
@@ -59,10 +61,25 @@ export async function savePdf(id: string, file: File): Promise<void> {
 
 export async function savePdfProgress(id: string, page: number, word: number, speed: number): Promise<void> {
     const db = await openDatabase();
-    if (deleted.has(id)) return;
+    if (resetting || deleted.has(id)) return;
     const transaction = db.transaction(PAGES, "readwrite");
     transaction.objectStore(PAGES).put({ page, word, speed }, id);
     await completed(transaction);
+}
+
+/** Clear stored PDFs and progress atomically and prevent pending saves until reload. */
+export async function clearAllPdfData(): Promise<void> {
+    resetting = true;
+    try {
+        const db = await openDatabase();
+        const transaction = db.transaction([FILES, PAGES], "readwrite");
+        transaction.objectStore(FILES).clear();
+        transaction.objectStore(PAGES).clear();
+        await completed(transaction);
+    } catch (error) {
+        resetting = false;
+        throw error;
+    }
 }
 
 export async function deletePdf(id: string): Promise<void> {

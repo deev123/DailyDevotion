@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import ColourPicker from "./ColourPicker.tsx"
+import DeleteData from "./DeleteData.tsx"
 import ListPicker from "./ListPicker.tsx"
 import { hasReadableContrast, readableText } from "./themeContrast"
 
@@ -274,6 +275,7 @@ function SettingsSidebar({ onOpenChange }: { onOpenChange: (open: boolean) => vo
                             onChange={(e) => applyLetterSpacing(Number(e.target.value))}
                         />
                     </label>
+                    <DeleteData />
                 </aside>
             </div>, document.body
         )}
