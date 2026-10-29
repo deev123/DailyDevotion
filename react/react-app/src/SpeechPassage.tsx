@@ -6,7 +6,7 @@ import ListPicker from "./ListPicker.tsx";
 // may cancel it, so deleting an idle widget cannot stop a different reader.
 let stopActiveReader: (() => void) | null = null;
 
-type Props = { html: string; id: string; language: string; integrated?: boolean; passageKey?: string; passageIndex?: number; playerTriggerContainer?: HTMLElement | null; stopPlayerRef?: RefObject<(() => void) | null> };
+type Props = { html: string; id: string; language: string; passageKey?: string; passageIndex?: number; playerTriggerContainer?: HTMLElement | null; stopPlayerRef?: RefObject<(() => void) | null> };
 type Sentence = { text: string; index: number };
 
 // Wrap readable text in place so the experimental reader retains the source
@@ -68,7 +68,7 @@ function readPosition(id: string, passageKey: string): number {
     } catch { return 0; }
 }
 
-export default function SpeechPassage({ html, id, language, integrated = false, passageKey = "", passageIndex, playerTriggerContainer, stopPlayerRef }: Props) {
+export default function SpeechPassage({ html, id, language, passageKey = "", passageIndex, playerTriggerContainer, stopPlayerRef }: Props) {
     const supported = typeof window.speechSynthesis !== "undefined" && typeof SpeechSynthesisUtterance !== "undefined";
     const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
     const [selectedVoice, setSelectedVoice] = useState(() => readPreference(id + "_voice", ""));
@@ -77,7 +77,7 @@ export default function SpeechPassage({ html, id, language, integrated = false, 
         return Number.isFinite(saved) ? Math.max(0.5, Math.min(2, saved)) : 1;
     });
     const [status, setStatus] = useState<"idle" | "playing" | "paused" | "ended">("idle");
-    const [initialPosition] = useState(() => integrated ? readPosition(id, passageKey) : 0);
+    const [initialPosition] = useState(() => readPosition(id, passageKey));
     const [sentenceIndex, setSentenceIndex] = useState(initialPosition);
     const [word, setWord] = useState<{ start: number; end: number } | null>(null);
     const [error, setError] = useState("");
@@ -104,55 +104,10 @@ export default function SpeechPassage({ html, id, language, integrated = false, 
         };
     }, [stopPlayerRef]);
 
-    const integratedPassage = useMemo(() => integrated ? prepareIntegratedPassage(html, language) : null, [html, language, integrated]);
-    const standardParagraphs = useMemo(() => {
-        const document = new DOMParser().parseFromString(html, "text/html");
-        // YouVersion uses yv-vlbl spans, not just superscripts, for verse
-        // numbers. Remove metadata by markup rather than stripping all digits:
-        // numbers in the actual passage (ages, quantities, etc.) must survive.
-        document.querySelectorAll([
-            "script", "style", "noscript", "sup", "[hidden]", "[aria-hidden='true']",
-            ".yv-vlbl", ".yv-clbl", ".verse-number", ".verse-num", ".chapter-number", ".label",
-            ".note", ".footnote", ".footnotes", ".crossreference", ".cross-reference",
-            ".yv-note", ".yv-footnote", "[role='doc-noteref']", "[role='doc-footnote']",
-            "[role='doc-endnotes']", "a[href^='#footnote']", "a[href^='#fn']",
-        ].join(", ")).forEach(node => node.replaceWith(" "));
-        // Preserve boundaries even for provider markup using div.p and poetry
-        // lines, otherwise adjacent verses can become a single spoken word.
-        document.querySelectorAll("br, .yv-v").forEach(node => {
-            if (node.tagName === "BR") node.replaceWith(" ");
-            else node.prepend(" ");
-        });
-        document.querySelectorAll("p, div, h1, h2, h3, h4, li").forEach(node => {
-            node.prepend("\n");
-            node.append("\n");
-        });
-        const texts = (document.body.textContent ?? "").split(/\n+/u)
-            .map(text => text
-                .replace(/[\u00ad\u200b\ufeff]/gu, "") // soft hyphens and invisible layout characters
-                .replace(/\s+/gu, " ")
-                .replace(/\s+([,.;:!?])/gu, "$1")
-                .trim())
-            .filter(text => /[\p{L}\p{N}]/u.test(text));
-        let index = 0;
-        return texts.map(text => {
-            let segments: string[];
-            if (typeof Intl.Segmenter !== "undefined") {
-                let segmenter: Intl.Segmenter;
-                try { segmenter = new Intl.Segmenter(language || "en", { granularity: "sentence" }); }
-                catch { segmenter = new Intl.Segmenter("en", { granularity: "sentence" }); }
-                segments = Array.from(segmenter.segment(text), item => item.segment);
-            } else {
-                segments = text.match(/[^.!?。！？]+[.!?。！？]*\s*/gu) ?? [text];
-            }
-            return segments.map(text => ({ text, index: index++ }));
-        });
-    }, [html, language]);
-    const paragraphs = integratedPassage?.paragraphs ?? standardParagraphs;
-    const sentences = useMemo(() => paragraphs.flat(), [paragraphs]);
+    const integratedPassage = useMemo(() => prepareIntegratedPassage(html, language), [html, language]);
+    const sentences = useMemo(() => integratedPassage.paragraphs.flat(), [integratedPassage]);
     const currentPosition = Math.min(sentenceIndex, Math.max(0, sentences.length - 1));
     const highlightedMarkup = useMemo(() => {
-        if (!integratedPassage) return "";
         if (status !== "playing" && status !== "paused") return integratedPassage.markup;
         const doc = new DOMParser().parseFromString(integratedPassage.markup, "text/html");
         const active = doc.querySelector(`[data-speech-index="${currentPosition}"]`);
@@ -200,7 +155,6 @@ export default function SpeechPassage({ html, id, language, integrated = false, 
     }
 
     function savePosition(position: number) {
-        if (!integrated) return;
         try {
             // Ignore late speech callbacks from a chapter that was just changed.
             if (passageIndex !== undefined && Number(localStorage.getItem(id + "_index") ?? "0") !== passageIndex) return;
@@ -360,39 +314,8 @@ export default function SpeechPassage({ html, id, language, integrated = false, 
         if (status === "playing") play(positionRef.current, rate, offset, nextVoice);
     }
 
-    const controls = <div className="speech-controls" role="group" aria-label="Read aloud controls">
-            {!integrated && <p className="speech-caption">Read aloud demo</p>}
-            {!supported ? <p role="status">Text to speech is not available in this browser.</p> : <>
-                <label>Voice
-                    <select value={voice ? voiceKey(voice) : ""} onChange={event => {
-                        const nextVoice = voices.find(item => voiceKey(item) === event.target.value);
-                        if (nextVoice) changeVoice(nextVoice);
-                    }}>
-                        {!voices.length && <option value="">Browser default (voices loading)</option>}
-                        {voices.map((item, index) => <option key={`${voiceKey(item)}-${index}`} value={voiceKey(item)}>
-                            {item.name} — {item.lang}{item.localService ? " · Local" : " · Online"}
-                        </option>)}
-                    </select>
-                </label>
-                <label>Speed: {rate.toFixed(1)}×
-                    <input type="range" min="0.5" max="2" step="0.1" value={rate} onChange={event => {
-                        changeRate(Number(event.target.value));
-                    }} />
-                </label>
-                <div className="speech-buttons">
-                    <button disabled={!sentences.length} onClick={() => status === "playing" ? pause() : play(positionRef.current)}>
-                        {status === "playing" ? "Pause" : status === "paused" ? "Resume sentence" : status === "ended" ? "Read again" : "Play"}
-                    </button>
-                    <button disabled={!sentences.length} onClick={() => { pause(); positionRef.current = 0; setSentenceIndex(0); setStatus("idle"); }}>Stop / reset</button>
-                </div>
-                <p className="speech-caption" role="status">{status === "playing" ? `Reading sentence ${sentenceIndex + 1} of ${sentences.length}.` : status === "ended" ? "Finished reading." : status === "paused" ? "Paused. Resume repeats the current sentence." : "Choose a voice and press Play."}</p>
-                <p className="speech-caption">The current sentence is highlighted; word highlighting appears when the voice supports it. Online voices may send text to a speech service.</p>
-            </>}
-            {error && <p className="passage-error" role="alert">{error}</p>}
-        </div>;
-
     return <div className="speech-passage">
-        {integrated ? <div className={`speech-disclosure${playerOpen || error ? " speech-disclosure-open" : ""}`}>
+        <div className={`speech-disclosure${playerOpen || error ? " speech-disclosure-open" : ""}`}>
             {playerTriggerContainer && createPortal(<button type="button" className="speech-icon-button speech-player-toggle" aria-label={playerOpen ? "Close read aloud player" : "Open read aloud player"}
                 title={playerOpen ? "Close read aloud player" : "Open read aloud player"}
                 aria-expanded={playerOpen} aria-controls={playerOpen ? `${id}-read-aloud-player` : undefined} onClick={() => {
@@ -461,15 +384,7 @@ export default function SpeechPassage({ html, id, language, integrated = false, 
                     <p className="speech-caption">Online voices may send text to a speech service.</p>
                 </div>
             </dialog>, document.body)}
-        </div> : controls}
-        {integrated ? <div className="speech-integrated-text" dangerouslySetInnerHTML={{ __html: highlightedMarkup }} /> : <div className="speech-text">
-            {paragraphs.map((paragraph, index) => <p key={index}>{paragraph.map(sentence => {
-                const active = (status === "playing" || status === "paused") && sentence.index === sentenceIndex;
-                return <span key={sentence.index} className={active ? "speech-sentence-active" : undefined}>
-                    {active && word ? <>{sentence.text.slice(0, word.start)}<mark>{sentence.text.slice(word.start, word.end)}</mark>{sentence.text.slice(word.end)}</> : sentence.text}{" "}
-                </span>;
-            })}</p>)}
-            {!sentences.length && <p>No readable text is available for this passage.</p>}
-        </div>}
+        </div>
+        <div className="speech-integrated-text" dangerouslySetInnerHTML={{ __html: highlightedMarkup }} />
     </div>;
 }

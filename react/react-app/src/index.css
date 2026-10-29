@@ -1159,14 +1159,6 @@ p
   accent-color: var(--brand);
 }
 
-.speech-controls {
-  padding: 12px;
-  margin-bottom: 16px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  background: var(--accent1);
-}
-
 .speech-disclosure {
   position: sticky;
   top: calc(var(--header-offset) + var(--passage-header-height, 52px));
@@ -1235,38 +1227,7 @@ p
 .speech-settings-content label { display: flex; flex-direction: column; gap: 4px; margin-top: 16px; }
 .speech-settings-content input[type="range"] { width: 100%; margin: 0; }
 
-.speech-controls label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 12px;
-  font-size: 0.9rem;
-}
-
-.speech-controls select,
-.speech-controls button {
-  max-width: 100%;
-  min-width: 0;
-  padding: 8px;
-  border: 1px solid var(--outline);
-  border-radius: 8px;
-  background: var(--background);
-  color: var(--text);
-  font-family: inherit;
-  font-size: 0.875rem;
-  line-height: 1.4;
-  min-height: 40px;
-}
-
-.speech-controls input { width: 100%; margin: 0; accent-color: var(--brand); }
-.speech-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
-.speech-controls .speech-position { margin-top: 12px; }
-.speech-controls button { cursor: pointer; }
-.speech-controls button:enabled:hover { background: var(--surface-hover); }
-.speech-controls button:disabled { opacity: 0.5; cursor: default; }
-.speech-controls :is(button, select, input):focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
 .speech-caption { font-size: 0.8rem; line-height: 1.5; color: var(--text-muted); }
-.speech-text { line-height: 1.8; overflow-wrap: anywhere; }
 .speech-sentence-active {
   background: color-mix(in srgb, var(--background), var(--text) 24%);
   text-decoration: underline;

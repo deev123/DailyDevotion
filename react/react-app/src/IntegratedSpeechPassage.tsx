@@ -270,7 +270,7 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
         </div>
         <div className="passage-body">
             {error ? <p className="passage-error">{error}</p>
-             : html ? <SpeechPassage key={`${index}-${versionId}`} html={html} id={id} integrated passageKey={`${reference}|${versionId}`} passageIndex={index} playerTriggerContainer={playerTriggerContainer} stopPlayerRef={stopPlayerRef}
+             : html ? <SpeechPassage key={`${index}-${versionId}`} html={html} id={id} passageKey={`${reference}|${versionId}`} passageIndex={index} playerTriggerContainer={playerTriggerContainer} stopPlayerRef={stopPlayerRef}
                  language={versions.find(version => version.id === versionId)?.languageTag || "en"} /> : <p>...</p>}
         </div>
         {copyright &&

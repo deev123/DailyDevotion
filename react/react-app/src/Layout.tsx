@@ -1,5 +1,4 @@
 import { lazy, Suspense, useEffect, useState } from "react";
-import Passage from "./Passage.tsx"
 import IntegratedSpeechPassage from "./IntegratedSpeechPassage.tsx"
 import NoteBox from "./NoteBox.tsx"
 import VideoPlaylist from "./VideoPlaylist.tsx"
@@ -229,10 +228,6 @@ function Layout(){
     // these menu options define the configs to pass for each type of component
     let addElementOptions = [
     {
-        label: "Read aloud passage (demo)",
-        action: () => addComponent({ type: "speechPassage", id: generateId(), list: "Bible_Chapters.txt" })
-    },
-    {
         label: "PDF reader",
         action: () => addComponent({ type: "pdfReader", id: generateId() })
     },
@@ -344,9 +339,7 @@ function Layout(){
                 case "videoPlaylist":
                     return <VideoPlaylist layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
                 case "integratedSpeechPassage":
-                    return <IntegratedSpeechPassage layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
                 case "speechPassage":
-                    return <Passage speech layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
                 case "passage2":
                     return <IntegratedSpeechPassage layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
                 case "catechism":
