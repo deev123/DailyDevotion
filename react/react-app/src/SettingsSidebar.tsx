@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
+import ColourPicker from "./ColourPicker.tsx"
+import ListPicker from "./ListPicker.tsx"
+import { hasReadableContrast, readableText } from "./themeContrast"
+
+const THEME_PRESETS = [
+    { id: "dark", label: "Dark", background: "#1e1e1e", text: "#d7d7d7" },
+    { id: "light", label: "Light", background: "#f8f8f5", text: "#252525" },
+    { id: "sepia", label: "Sepia", background: "#f5ecd9", text: "#493729" },
+    { id: "midnight", label: "Midnight", background: "#172237", text: "#e1e9f5" },
+] as const;
 
 const FONT_OPTIONS = [
     { id: "arial", label: "Arial (default)", family: "Arial, sans-serif" },
@@ -44,6 +54,8 @@ function SettingsSidebar({ onOpenChange }: { onOpenChange: (open: boolean) => vo
 
     const [background, setBackground] = useState("");
     const [text, setText] = useState("");
+    const [selectedTheme, setSelectedTheme] = useState<string>("dark");
+    const [customColours, setCustomColours] = useState({ background: "#1e1e1e", text: "#d7d7d7" });
     const [font, setFont] = useState("arial");
     const [fontSize, setFontSize] = useState(100);
     const [letterSpacing, setLetterSpacing] = useState(0);
@@ -78,6 +90,25 @@ function SettingsSidebar({ onOpenChange }: { onOpenChange: (open: boolean) => vo
         localStorage.setItem("themeText", txt);
     }
 
+    function selectTheme(id: string) {
+        const colours = id === "custom" ? customColours : THEME_PRESETS.find(theme => theme.id === id);
+        if (!colours) return;
+        setSelectedTheme(id);
+        setBackground(colours.background);
+        setText(colours.text);
+        localStorage.setItem("themePreset", id);
+        applyTheme(colours.background, colours.text);
+    }
+
+    function updateCustomColours(bg: string, txt: string) {
+        setBackground(bg);
+        setText(txt);
+        setCustomColours({ background: bg, text: txt });
+        localStorage.setItem("themeCustomBackground", bg);
+        localStorage.setItem("themeCustomText", txt);
+        applyTheme(bg, txt);
+    }
+
     // close with a quick exit animation, then remove from the DOM
     function closeSidebar() {
         setClosing(true);
@@ -102,8 +133,21 @@ function SettingsSidebar({ onOpenChange }: { onOpenChange: (open: boolean) => vo
         const savedBg = localStorage.getItem("themeBackground") ?? readCssVar("--background");
         const savedText = localStorage.getItem("themeText") ?? readCssVar("--text");
         setBackground(savedBg);
-        setText(savedText);
-        applyTheme(savedBg, savedText);
+        const safeText = hasReadableContrast(savedBg, savedText) ? savedText : readableText(savedBg);
+        setText(safeText);
+        const preset = THEME_PRESETS.find(theme =>
+            theme.background.toLowerCase() === savedBg.toLowerCase() && theme.text.toLowerCase() === safeText.toLowerCase()
+        );
+        const savedTheme = localStorage.getItem("themePreset");
+        const activeTheme = savedTheme === "custom" ? "custom" : preset?.id ?? "custom";
+        const customBg = localStorage.getItem("themeCustomBackground") ?? savedBg;
+        const customText = localStorage.getItem("themeCustomText") ?? safeText;
+        const safeCustomText = hasReadableContrast(customBg, customText) ? customText : readableText(customBg);
+        setSelectedTheme(activeTheme);
+        setCustomColours({ background: customBg, text: safeCustomText });
+        localStorage.setItem("themeCustomBackground", customBg);
+        localStorage.setItem("themeCustomText", safeCustomText);
+        applyTheme(savedBg, safeText);
         applyFont(localStorage.getItem("themeFont") ?? "arial");
         applyFontSize(readNumberSetting("themeFontSize", 100, 75, 150));
         applyLetterSpacing(readNumberSetting("themeLetterSpacing", 0, -0.15, 0.2));
@@ -155,37 +199,52 @@ function SettingsSidebar({ onOpenChange }: { onOpenChange: (open: boolean) => vo
                         >close</button>
                     </div>
 
-                    <label className="settings-row">
-                        <span>Text colour</span>
-                        <input
-                            type="color"
-                            value={text}
-                            onChange={(e) => { setText(e.target.value); applyTheme(background, e.target.value); }}
-                        />
-                    </label>
+                    <fieldset className="theme-selector">
+                        <legend>Theme</legend>
+                        <div className="theme-selector-grid">
+                            {THEME_PRESETS.map(theme => <label className="theme-option" key={theme.id}>
+                                <input type="radio" name="theme" value={theme.id}
+                                    checked={selectedTheme === theme.id} onChange={() => selectTheme(theme.id)} />
+                                <span className="theme-option-card">
+                                    <span className="theme-option-preview" style={{ background: theme.background, color: theme.text }} aria-hidden="true">Aa</span>
+                                    <span>{theme.label}</span>
+                                </span>
+                            </label>)}
+                            <label className="theme-option">
+                                <input type="radio" name="theme" value="custom"
+                                    checked={selectedTheme === "custom"} onChange={() => selectTheme("custom")} />
+                                <span className="theme-option-card">
+                                    <span className="theme-option-preview" style={{ background: customColours.background, color: customColours.text }} aria-hidden="true">Aa</span>
+                                    <span>Custom</span>
+                                </span>
+                            </label>
+                        </div>
+                    </fieldset>
 
-                    <label className="settings-row">
-                        <span>Background colour</span>
-                        <input
-                            type="color"
-                            value={background}
-                            onChange={(e) => { setBackground(e.target.value); applyTheme(e.target.value, text); }}
-                        />
-                    </label>
+                    {selectedTheme === "custom" && <div className="theme-custom-colours">
+                        <div className="settings-row">
+                            <span>Text colour</span>
+                            <ColourPicker label="Text colour" value={text} contrastWith={background} target="text"
+                                onChange={colour => updateCustomColours(background, colour)} />
+                        </div>
+                        <div className="settings-row">
+                            <span>Background colour</span>
+                            <ColourPicker label="Background colour" value={background} contrastWith={text} target="background"
+                                onChange={colour => updateCustomColours(colour, text)} />
+                        </div>
+                    </div>}
 
-                    <label className="settings-row">
+                    <div className="settings-row">
                         <span>Font</span>
-                        <select
+                        <ListPicker
+                            title="Select font"
                             className="settings-font-select"
-                            aria-describedby="font-availability-note"
-                            value={font}
-                            onChange={(e) => applyFont(e.target.value)}
-                        >
-                            {FONT_OPTIONS.map((option) => (
-                                <option key={option.id} value={option.id}>{option.label}</option>
-                            ))}
-                        </select>
-                    </label>
+                            describedBy="font-availability-note"
+                            options={FONT_OPTIONS.map((option, index) => ({ value: index, label: option.label }))}
+                            value={FONT_OPTIONS.findIndex(option => option.id === font)}
+                            onChange={index => applyFont(FONT_OPTIONS[index].id)}
+                        />
+                    </div>
                     <p id="font-availability-note" className="settings-help">
                         Some fonts may not be installed on your device. If unavailable, a similar font will be used.
                     </p>

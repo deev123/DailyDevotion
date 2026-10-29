@@ -9,10 +9,11 @@ type Props = {
     onChange: (value: number) => void;
     className?: string;
     disabled?: boolean;
+    describedBy?: string;
 };
 
 /** A flat list, or language-style accordion groups, with selection owned by the caller. */
-export default function ListPicker({ title, options, value, onChange, className = "reading-title-select", disabled = false }: Props) {
+export default function ListPicker({ title, options, value, onChange, className = "reading-title-select", disabled = false, describedBy }: Props) {
     const id = useId();
     const dialogRef = useRef<HTMLDialogElement>(null);
     const [open, setOpen] = useState(false);
@@ -52,13 +53,16 @@ export default function ListPicker({ title, options, value, onChange, className 
     return <>
         <button type="button" className={`${className} passage-picker-trigger`}
             disabled={disabled || !options.length} aria-haspopup="dialog" aria-expanded={open}
-            aria-controls={`${id}-dialog`} aria-label={`${title}: ${selected?.label ?? "None selected"}`} onClick={show}>
+            aria-controls={`${id}-dialog`} aria-describedby={describedBy} aria-label={`${title}: ${selected?.label ?? "None selected"}`} onClick={show}>
             <span>{selected?.label ?? title}</span>
             <span className="material-icons" aria-hidden="true">expand_more</span>
         </button>
         {createPortal(<dialog ref={dialogRef} id={`${id}-dialog`} className="passage-picker list-picker"
             aria-labelledby={`${id}-title`} onClose={() => setOpen(false)}
+            onKeyDown={event => { if (event.key === "Escape") event.stopPropagation(); }}
             onClick={event => {
+                // A portal can still bubble into the settings sidebar's overlay.
+                event.stopPropagation();
                 if (event.target !== event.currentTarget) return;
                 const rect = event.currentTarget.getBoundingClientRect();
                 if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close();
