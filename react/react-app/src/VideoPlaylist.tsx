@@ -3,14 +3,15 @@ import Menu from "./Menu.tsx"
 import ListPicker from "./ListPicker.tsx"
 import { useEffect, useState } from "react"
 import VideoPlayer from "./VideoPlayer.tsx"
+import type { VideoEntry } from "./layoutStorage.ts"
 
 type VideoPlaylistProps = {
     layoutOptions: MenuOption[],
     id: string,
-    list: string
+    list: string | VideoEntry[]
 }
 
-type Video = { title: string; videoId: string };
+type Video = VideoEntry;
 
 function VideoPlaylist({ layoutOptions, id, list }: VideoPlaylistProps) {
     const [index, setIndex] = useState(() => {
@@ -32,6 +33,7 @@ function VideoPlaylist({ layoutOptions, id, list }: VideoPlaylistProps) {
     useEffect(() => {
         let cancelled = false;
         async function load() {
+            if (Array.isArray(list)) { setVideos(list); return; }
             try {
                 const response = await fetch(import.meta.env.BASE_URL + list);
                 if (!response.ok) throw new Error("Failed to load playlist");

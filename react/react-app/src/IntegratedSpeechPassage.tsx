@@ -92,10 +92,12 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
     }
 
     function loadIndex() {
-        setIndex(() =>
-        {
-            return Number.parseInt(JSON.parse(localStorage.getItem(id + "_index") ?? "0"));
-        })
+        try {
+            // The oldest reader saved its chapter under the bare component ID.
+            const saved = localStorage.getItem(id + "_index") ?? localStorage.getItem(id) ?? "0";
+            const value: unknown = JSON.parse(saved);
+            setIndex(typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : 0);
+        } catch { setIndex(0); }
     }
 
     function saveVersion(val: number) {
@@ -141,6 +143,7 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
         async function load() {
             const data = await loadList(list) ?? [];
             setListElements(data);
+            if (data.length) setIndex(previous => previous < data.length ? previous : 0);
         }
         load();
     },[]);
@@ -151,7 +154,8 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
 
         async function loadVersion() {
             const savedVersion = localStorage.getItem(id + "_version");
-            const stored = Number.parseInt(JSON.parse(savedVersion ?? "null"));
+            let stored = 0;
+            try { stored = Number.parseInt(JSON.parse(savedVersion ?? "null")); } catch { /* Use the normal fallback. */ }
             const available = await YouVersionAPI.fetchVersions();
             setVersions(available);
 
