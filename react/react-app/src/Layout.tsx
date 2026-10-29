@@ -169,6 +169,7 @@ function Layout(){
                     break;
                 case "videoPlaylist":
                     localStorage.removeItem(id + "_index");
+                    localStorage.removeItem(id + "_videoPositions");
                     break;
                 case "speechPassage":
                     localStorage.removeItem(id + "_voice");
