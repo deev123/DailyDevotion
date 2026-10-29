@@ -1,5 +1,6 @@
 import type { MenuOption } from "./Menu.tsx" // import type important for importing types
 import Menu from "./Menu.tsx"
+import SpeechPassage from "./SpeechPassage.tsx"
 import { useState, useEffect } from "react"
 import GooeyCheckbox from "./GooeyCheckbox.tsx"
 import confetti from "canvas-confetti"
@@ -8,6 +9,7 @@ import YouVersionAPI from "./YouVersionAPI.ts"
 type PassageProps = {
     layoutOptions: MenuOption[],
     id: string,
+    speech?: boolean,
     list: string // file name or local store var name
 }
 
@@ -44,7 +46,7 @@ async function loadList(filePath: string) {
 }
 
 
-function Passage({ layoutOptions, id, list }: PassageProps){
+function Passage({ layoutOptions, id, list, speech = false }: PassageProps){
 
     let [index, setIndex] = useState(0);
     // elements of selection. e.g. loaded from Bible_Chapters.txt
@@ -164,6 +166,8 @@ function Passage({ layoutOptions, id, list }: PassageProps){
 
     // query the chapter html when selection, list or version changes
     useEffect(() => {
+        let cancelled = false;
+        setHtml("");
         async function loadChapter() {
             if (!listElements[index]) return;
             if (!versionId) return;
@@ -179,10 +183,12 @@ function Passage({ layoutOptions, id, list }: PassageProps){
 
             setError("");
             const result = await YouVersionAPI.fetchChapterHtml(versionId, usfm);
+            if (cancelled) return;
             setHtml(result.html);
             setError(result.error);
         }
         loadChapter();
+        return () => { cancelled = true; };
     }, [index, listElements, versionId]);
 
     function onVersionChange(val: number) {
@@ -234,7 +240,9 @@ function Passage({ layoutOptions, id, list }: PassageProps){
         }
         <div className="passage-body">
             {error ? <p className="passage-error">{error}</p>
-             : html ? <div dangerouslySetInnerHTML={{ __html: html }}/> : <p>...</p>}
+             : html ? (speech ? <SpeechPassage key={`${index}-${versionId}`} html={html} id={id}
+                 language={versions.find(version => version.id === versionId)?.languageTag || "en"} />
+                 : <div dangerouslySetInnerHTML={{ __html: html }}/>) : <p>...</p>}
         </div>
         {copyright &&
             <div className="passage-copyright">{copyright}</div>

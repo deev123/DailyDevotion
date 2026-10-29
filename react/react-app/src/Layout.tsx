@@ -47,6 +47,7 @@ type Component_t =
     | LegacyPassage_t
     | NoteBox_t
     | VideoPlaylist_t
+    | { type: "speechPassage"; id: string; list: string }
     | Passage_t
     | Catechism_t
     | { type: "pdfReader"; id: string }
@@ -169,6 +170,12 @@ function Layout(){
                 case "videoPlaylist":
                     localStorage.removeItem(id + "_index");
                     break;
+                case "speechPassage":
+                    localStorage.removeItem(id + "_voice");
+                    localStorage.removeItem(id + "_speechRate");
+                    localStorage.removeItem(id + "_index");
+                    localStorage.removeItem(id + "_version");
+                    break;
                 case "passage2":
                     localStorage.removeItem(id + "_index");
                     localStorage.removeItem(id + "_version");
@@ -219,6 +226,10 @@ function Layout(){
     // addComponent takes a component_t config object as an argmunet to add to layout
     // these menu options define the configs to pass for each type of component
     let addElementOptions = [
+    {
+        label: "Read aloud passage (demo)",
+        action: () => addComponent({ type: "speechPassage", id: generateId(), list: "Bible_Chapters.txt" })
+    },
     {
         label: "PDF reader",
         action: () => addComponent({ type: "pdfReader", id: generateId() })
@@ -330,6 +341,8 @@ function Layout(){
                     return <NoteBox layoutOptions={layoutOptions} id={c.id} key={c.id}/>;
                 case "videoPlaylist":
                     return <VideoPlaylist layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
+                case "speechPassage":
+                    return <Passage speech layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
                 case "passage2":
                     return <Passage layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
                 case "catechism":
