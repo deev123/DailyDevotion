@@ -406,12 +406,15 @@ export default function SpeechPassage({ defaultFollow = false, autoPlayGeneratio
 
     function changeVoice(nextVoice: SpeechSynthesisVoice) {
         const key = voiceKey(nextVoice);
-        if (voice && voiceKey(voice) === key) return;
+        if (voice && voiceKey(voice) === key) {
+            if (status !== "playing") play(positionRef.current, rate, 0, nextVoice);
+            return;
+        }
         const offset = wordStartRef.current ?? 0;
         setSelectedVoice(key);
         savePreference("_voice", key);
         // A voice can't be changed on an utterance already being spoken.
-        if (status === "playing") play(positionRef.current, rate, offset, nextVoice);
+        play(positionRef.current, rate, offset, nextVoice);
     }
 
     return <div className="speech-passage">
@@ -475,7 +478,7 @@ export default function SpeechPassage({ defaultFollow = false, autoPlayGeneratio
                 </div>
                 <div className="passage-picker-panel speech-settings-content">
                     <span>Voice</span>
-                    <ListPicker title="Select voice" className="version-select" options={voices.map((item, index) => ({
+                    <ListPicker title="Select voice" className="version-select" closeOnSelect={false} options={voices.map((item, index) => ({
                         value: index, label: `${item.name} — ${item.lang}${item.localService ? " · Local" : " · Online"}`,
                     }))} value={voice ? voices.indexOf(voice) : null} disabled={!voices.length}
                         onChange={index => {

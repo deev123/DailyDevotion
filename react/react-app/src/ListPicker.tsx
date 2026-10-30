@@ -12,10 +12,11 @@ type Props = {
     describedBy?: string;
     triggerIcon?: string;
     triggerLabel?: string;
+    closeOnSelect?: boolean;
 };
 
 /** A flat list, or language-style accordion groups, with selection owned by the caller. */
-export default function ListPicker({ title, options, value, onChange, className = "reading-title-select", disabled = false, describedBy, triggerIcon, triggerLabel }: Props) {
+export default function ListPicker({ title, options, value, onChange, className = "reading-title-select", disabled = false, describedBy, triggerIcon, triggerLabel, closeOnSelect = true }: Props) {
     const id = useId();
     const dialogRef = useRef<HTMLDialogElement>(null);
     const [open, setOpen] = useState(false);
@@ -45,7 +46,7 @@ export default function ListPicker({ title, options, value, onChange, className 
         return <div className="list-picker-options">
             {entries.map(option => <button key={option.value} type="button"
                 aria-current={option.value === value ? "true" : undefined}
-                onClick={() => { onChange(option.value); close(); }}>
+                onClick={() => { onChange(option.value); if (closeOnSelect) close(); }}>
                 <span>{option.label}</span>
                 {option.value === value && <span className="material-icons" aria-hidden="true">check</span>}
             </button>)}

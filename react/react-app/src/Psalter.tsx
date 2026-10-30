@@ -76,8 +76,8 @@ export default function Psalter({ id, layoutOptions }: { id: string; layoutOptio
     }
     function changeTune(next: number) {
         const audio = audioRef.current;
-        if (!audio || next === tune) return;
-        const resume = !audio.paused;
+        if (!audio) return;
+        if (next === tune) { if (audio.paused) void play(); return; }
         ++playRequest.current;
         audio.pause();
         audio.src = `${import.meta.env.BASE_URL}psalter-tunes/${tunes[next].file}`;
@@ -87,7 +87,7 @@ export default function Psalter({ id, layoutOptions }: { id: string; layoutOptio
         localStorage.setItem(id + "_tune", tunes[next].file);
         setPlaying(false);
         setAudioError("");
-        if (resume) void play();
+        void play();
     }
     useEffect(() => {
         let cancelled = false;
@@ -121,7 +121,7 @@ export default function Psalter({ id, layoutOptions }: { id: string; layoutOptio
                     }}>
                     <span className="material-icons" aria-hidden="true">{playing ? "pause" : "play_arrow"}</span>
                 </button>
-                <ListPicker title="Select tune" className="version-select psalter-tune-select"
+                <ListPicker title="Select tune" className="version-select psalter-tune-select" closeOnSelect={false}
                     options={tunes.map((item, i) => ({ value: i, label: item.name }))} value={tune} onChange={changeTune} />
                 <label className="speech-mini-position psalter-speed">
                     <span>Speed {speed.toFixed(1)}×</span>
