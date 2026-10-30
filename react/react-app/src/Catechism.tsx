@@ -63,7 +63,10 @@ function proofReference(reference: string) {
 // fetch the catechism json file and return its data array
 async function loadCatechism(filePath: string) {
     try {
-        const response = await fetch(import.meta.env.BASE_URL + filePath);
+        // The Heidelberg file existed before it contained proofs. Give updated
+        // data a new URL and revalidate it so older browser caches cannot hide
+        // later changes to any of the catechisms.
+        const response = await fetch(`${import.meta.env.BASE_URL}${filePath}?v=proofs-1`, { cache: "no-cache" });
         // on dev server if file not found it may return index.html
         if (!response.ok) throw new Error("Failed to load file");
 
