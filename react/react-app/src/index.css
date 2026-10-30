@@ -1688,3 +1688,9 @@ input[type="range"]:disabled { opacity: 0.5; cursor: default; }
 .delete-data-dialog .delete-data-actions .danger-solid-button { background: #a12a27; border-color: #a12a27; color: #fff; font-weight: 700; }
 .delete-data-dialog .delete-data-actions .danger-solid-button:enabled:hover { background: #7d1f1c; }
 .delete-data-dialog .delete-data-actions button:disabled { opacity: 0.5; cursor: default; }
+
+.psalter-stanza, .psalter-heading { white-space: pre-line; }
+.psalter-stanza { line-height: 1.6; margin: 1em 0; }
+.psalter-heading { font-style: italic; }
+.psalter-tune-select { flex: 1 1 130px; min-width: 0; }
+.psalter-speed { flex: 1 1 150px; }

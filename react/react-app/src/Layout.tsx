@@ -3,6 +3,7 @@ import { parseStoredLayout, migrateLegacyPassageIndices, type ComponentConfig } 
 import IntegratedSpeechPassage from "./IntegratedSpeechPassage.tsx"
 import NoteBox from "./NoteBox.tsx"
 import VideoPlaylist from "./VideoPlaylist.tsx"
+import Psalter from "./Psalter.tsx"
 import Catechism from "./Catechism.tsx"
 import Header from "./Header.tsx"
 import Menu from "./Menu.tsx"
@@ -125,6 +126,11 @@ function Layout(){
                     localStorage.removeItem(id + "_index");
                     localStorage.removeItem(id + "_version");
                     break;
+                case "psalter":
+                    localStorage.removeItem(id + "_tune");
+                    localStorage.removeItem(id + "_tuneSpeed");
+                    localStorage.removeItem(id + "_index");
+                    break;
                 case "catechism":
                     localStorage.removeItem(id + "_index");
                     break;
@@ -186,6 +192,10 @@ function Layout(){
                 list: "Psalms.txt"
             });
         }
+    },
+    {
+        label: "Sing a Psalm (1650 Psalter)",
+        action: () => addComponent({ type: "psalter", id: generateId() })
     },
     {
         label: "Note Box",
@@ -258,6 +268,9 @@ function Layout(){
                     break;
                 case "passage2":
                     content = <IntegratedSpeechPassage layoutOptions={layoutOptions} id={c.id} list={c.list}/>;
+                    break;
+                case "psalter":
+                    content = <Psalter layoutOptions={layoutOptions} id={c.id}/>;
                     break;
                 case "catechism":
                     content = <Catechism layoutOptions={layoutOptions} id={c.id} list={c.list}/>;
