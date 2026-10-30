@@ -1,4 +1,4 @@
-import { clearAllPdfData } from "./pdfStorage";
+import { clearAllPdfData } from "../pdf/pdfStorage";
 
 const appKeys = [
     "componentsConfig", "streak", "themeBackground", "themeText", "themePreset",

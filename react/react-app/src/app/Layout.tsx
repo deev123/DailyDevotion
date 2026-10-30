@@ -1,15 +1,15 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { parseStoredLayout, migrateLegacyPassageIndices, type ComponentConfig } from "./layoutStorage.ts";
-import IntegratedSpeechPassage from "./IntegratedSpeechPassage.tsx"
-import NoteBox from "./NoteBox.tsx"
-import VideoPlaylist from "./VideoPlaylist.tsx"
-import Psalter from "./Psalter.tsx"
-import Catechism from "./Catechism.tsx"
+import IntegratedSpeechPassage from "../features/bible/IntegratedSpeechPassage.tsx"
+import NoteBox from "../features/notes/NoteBox.tsx"
+import VideoPlaylist from "../features/video/VideoPlaylist.tsx"
+import Psalter from "../features/psalter/Psalter.tsx"
+import Catechism from "../features/catechism/Catechism.tsx"
 import Header from "./Header.tsx"
-import Menu from "./Menu.tsx"
-import { deletePdf } from "./pdfStorage.ts"
+import Menu from "../components/Menu.tsx"
+import { deletePdf } from "../features/pdf/pdfStorage.ts"
 
-const PdfReader = lazy(() => import("./PdfReader.tsx"));
+const PdfReader = lazy(() => import("../features/pdf/PdfReader.tsx"));
 
 type Component_t = ComponentConfig;
 

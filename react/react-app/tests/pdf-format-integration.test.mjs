@@ -5,7 +5,7 @@ import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 // Bundle the TypeScript source so the integration test works on Node versions
 // which do not support TypeScript imports natively.
-const bundle = await build({ entryPoints: [new URL('../src/pdfTextReader.ts', import.meta.url).pathname],
+const bundle = await build({ entryPoints: [new URL('../src/features/pdf/pdfTextReader.ts', import.meta.url).pathname],
     bundle: true, write: false, format: 'esm', platform: 'node', external: ['pdfjs-dist/*'], logLevel: 'silent' });
 const code = bundle.outputFiles[0].text.replaceAll('"pdfjs-dist/legacy/build/pdf.mjs"', JSON.stringify(import.meta.resolve('pdfjs-dist/legacy/build/pdf.mjs')));
 const { readPdfText } = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);

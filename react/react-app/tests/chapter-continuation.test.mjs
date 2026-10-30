@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
 
-const source = readFileSync(new URL('../src/IntegratedSpeechPassage.tsx', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../src/features/bible/IntegratedSpeechPassage.tsx', import.meta.url), 'utf8');
 const code = source.slice(source.indexOf('    async function continueToNextChapter('), source.indexOf('    // produce a localized label'));
 const js = ts.transpileModule(code, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
 function harness(index, listElements) {

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import ListPicker from "./ListPicker.tsx";
+import ListPicker from "../../components/ListPicker.tsx";
 import confetti from "canvas-confetti";
-import GooeyCheckbox from "./GooeyCheckbox.tsx";
-import Menu, { type MenuOption } from "./Menu.tsx";
-import PassagePicker from "./PassagePicker.tsx";
+import GooeyCheckbox from "../../components/GooeyCheckbox.tsx";
+import Menu, { type MenuOption } from "../../components/Menu.tsx";
+import PassagePicker from "../../components/PassagePicker.tsx";
 
 type Setting = { heading: string; stanzas: string[] };
 const references = Array.from({ length: 150 }, (_, i) => `Psalm ${i + 1}`);

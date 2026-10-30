@@ -6,7 +6,7 @@ import ts from 'typescript';
 
 // Exercise the component's actual playback functions with a deterministic speech
 // engine, including events that browsers can deliver after cancellation.
-const source = readFileSync(new URL('../src/SpeechPassage.tsx', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../src/features/speech/SpeechPassage.tsx', import.meta.url), 'utf8');
 const playback = source.slice(source.indexOf('    function pause()'), source.indexOf('    useEffect(() => {\n        if (!autoPlay || !voice)'))
     .replace('const startAutomatically = useEffectEvent(', 'const startAutomatically = (');
 const javascript = ts.transpileModule(playback, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;

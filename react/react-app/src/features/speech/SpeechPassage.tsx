@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent, useMemo, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import ListPicker from "./ListPicker.tsx";
+import ListPicker from "../../components/ListPicker.tsx";
 import { segmentInlineText } from "./speechText.ts";
 import { followSpeechHighlight } from "./speechFollow.ts";
 

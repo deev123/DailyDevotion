@@ -1,5 +1,5 @@
-import type { MenuOption } from "./Menu.tsx" // import type important for importing types
-import Menu from "./Menu.tsx"
+import type { MenuOption } from "../../components/Menu.tsx" // import type important for importing types
+import Menu from "../../components/Menu.tsx"
 import { useState, useEffect, useRef } from "react"
 
 type NoteBoxProps = {

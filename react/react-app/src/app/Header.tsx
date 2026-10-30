@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
-import SettingsSidebar from "./SettingsSidebar.tsx"
-import Streak from "./Streak.tsx"
+import SettingsSidebar from "../features/settings/SettingsSidebar.tsx"
+import Streak from "../features/streak/Streak.tsx"
 import type { ComponentConfig } from "./layoutStorage.ts"
 
 function Header({ components }: { components: ComponentConfig[] }) {

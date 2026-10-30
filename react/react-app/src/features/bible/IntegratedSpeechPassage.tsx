@@ -1,11 +1,11 @@
-import type { MenuOption } from "./Menu.tsx" // import type important for importing types
-import Menu from "./Menu.tsx"
-import PassagePicker from "./PassagePicker.tsx"
-import ListPicker from "./ListPicker.tsx"
-import type { PlayerState } from "./SpeechPassage.tsx"
-import SpeechPassage from "./SpeechPassage.tsx"
+import type { MenuOption } from "../../components/Menu.tsx" // import type important for importing types
+import Menu from "../../components/Menu.tsx"
+import PassagePicker from "../../components/PassagePicker.tsx"
+import ListPicker from "../../components/ListPicker.tsx"
+import type { PlayerState } from "../speech/SpeechPassage.tsx"
+import SpeechPassage from "../speech/SpeechPassage.tsx"
 import { useState, useEffect, useRef } from "react"
-import GooeyCheckbox from "./GooeyCheckbox.tsx"
+import GooeyCheckbox from "../../components/GooeyCheckbox.tsx"
 import confetti from "canvas-confetti"
 import YouVersionAPI from "./YouVersionAPI.ts"
 

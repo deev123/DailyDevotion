@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseStoredLayout, migrateLegacyPassageIndices } from '../src/layoutStorage.ts';
+import { parseStoredLayout, migrateLegacyPassageIndices } from '../src/app/layoutStorage.ts';
 
 function memoryStorage(entries = {}) {
     const values = new Map(Object.entries(entries));

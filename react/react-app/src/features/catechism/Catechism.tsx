@@ -1,10 +1,10 @@
-import type { MenuOption } from "./Menu.tsx" // import type important for importing types
-import Menu from "./Menu.tsx"
-import ListPicker from "./ListPicker.tsx"
+import type { MenuOption } from "../../components/Menu.tsx" // import type important for importing types
+import Menu from "../../components/Menu.tsx"
+import ListPicker from "../../components/ListPicker.tsx"
 import { useState, useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
-import YouVersionAPI from "./YouVersionAPI.ts"
-import GooeyCheckbox from "./GooeyCheckbox.tsx"
+import YouVersionAPI from "../bible/YouVersionAPI.ts"
+import GooeyCheckbox from "../../components/GooeyCheckbox.tsx"
 import confetti from "canvas-confetti"
 
 type CatechismProps = {

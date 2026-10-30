@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import ColourPicker from "./ColourPicker.tsx"
 import DeleteData from "./DeleteData.tsx"
-import ListPicker from "./ListPicker.tsx"
+import ListPicker from "../../components/ListPicker.tsx"
 import { hasReadableContrast, readableText } from "./themeContrast"
-import type { ComponentConfig } from "./layoutStorage.ts"
+import type { ComponentConfig } from "../../app/layoutStorage.ts"
 
 const THEME_PRESETS = [
     { id: "dark", label: "Dark", background: "#1e1e1e", text: "#d7d7d7" },

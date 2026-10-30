@@ -1,9 +1,9 @@
-import type { MenuOption } from "./Menu.tsx"
-import Menu from "./Menu.tsx"
-import ListPicker from "./ListPicker.tsx"
+import type { MenuOption } from "../../components/Menu.tsx"
+import Menu from "../../components/Menu.tsx"
+import ListPicker from "../../components/ListPicker.tsx"
 import { useEffect, useState } from "react"
 import VideoPlayer from "./VideoPlayer.tsx"
-import type { VideoEntry } from "./layoutStorage.ts"
+import type { VideoEntry } from "../../app/layoutStorage.ts"
 
 type VideoPlaylistProps = {
     layoutOptions: MenuOption[],

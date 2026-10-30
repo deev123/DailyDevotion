@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 import { OPS } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
-const source = readFileSync(new URL('../src/pdfColor.ts', import.meta.url), 'utf8').replace('import { OPS } from "pdfjs-dist/legacy/build/pdf.mjs";', `const OPS = ${JSON.stringify(OPS)};`);
+const source = readFileSync(new URL('../src/features/pdf/pdfColor.ts', import.meta.url), 'utf8').replace('import { OPS } from "pdfjs-dist/legacy/build/pdf.mjs";', `const OPS = ${JSON.stringify(OPS)};`);
 const js = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText;
 const { getPdfAccentItems } = await import(`data:text/javascript;base64,${Buffer.from(js).toString('base64')}`);
 const glyphs = text => [Array.from(text, unicode => ({ unicode }))];
