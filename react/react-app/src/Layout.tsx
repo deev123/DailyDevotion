@@ -208,7 +208,7 @@ function Layout(){
         }
     },
     {
-        label: "Heidelberg Catechism",
+        label: "Catechism",
         action: () => {
             addComponent({
                 type: "catechism",

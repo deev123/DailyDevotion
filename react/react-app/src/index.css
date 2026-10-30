@@ -491,6 +491,8 @@ p
 }
 
 /* catechism question + answer body */
+.catechism-selectors { display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1; }
+.catechism-selectors .reading-title-select { width: 100%; }
 .catechism-body
 {
   margin: 10px 0 10px;
@@ -514,6 +516,7 @@ p
 .catechism-proofs h3 { font-size: 1rem; margin: 0 0 .4rem; }
 .catechism-proofs p { margin: .25rem 0; }
 .catechism-proof-number { font-weight: 700; }
+.catechism-proof-marker { margin: 0 .15em; font-style: normal; }
 .catechism-reference {
   border: 0;
   padding: 2px 0;
