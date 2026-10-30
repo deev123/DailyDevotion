@@ -402,7 +402,7 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
                         setSection("speech", state.open);
                     }}
                     autoPlay={autoPlayPage === page} onComplete={continueSpeech}
-                    id={id} language="en" passageKey={`${pdf.fingerprints[0]}|${page}`} hideText mergeInlineText
+                    id={id} language="en" passageKey={`${pdf.fingerprints[0]}|${page}`} hideText mergeInlineText defaultFollow
                     textContainer={pageText ? textContainer : null}
                     playerTriggerContainer={playerTriggerContainer} stopPlayerRef={stopPlayerRef}
                     onPlaybackStart={() => {

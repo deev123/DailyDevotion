@@ -1302,6 +1302,7 @@ p
 }
 .speech-icon-button:hover { background: var(--accent1); color: var(--text); }
 .speech-icon-button:disabled { opacity: 0.5; cursor: default; }
+.speech-icon-button.speech-follow-active,
 .speech-icon-button.speech-playing {
   background: var(--text);
   color: var(--background);
@@ -1344,6 +1345,8 @@ p
 .speech-settings-content .version-select { width: 100%; }
 .speech-settings-content label { display: flex; flex-direction: column; gap: 4px; margin-top: 16px; }
 .speech-settings-content input[type="range"] { width: 100%; margin: 0; }
+.speech-settings-content label.speech-settings-toggle { flex-direction: row; align-items: center; gap: 10px; cursor: pointer; }
+.speech-settings-toggle input { width: 18px; height: 18px; margin: 0; accent-color: var(--brand); }
 
 .speech-caption { font-size: 0.8rem; line-height: 1.5; color: var(--text-muted); }
 .speech-sentence-active {

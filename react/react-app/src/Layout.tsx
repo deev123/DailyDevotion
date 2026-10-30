@@ -113,11 +113,15 @@ function Layout(){
                     localStorage.removeItem(id + "_voice");
                     localStorage.removeItem(id + "_speechRate");
                     localStorage.removeItem(id + "_speechPosition");
+                    localStorage.removeItem(id + "_speechFollow");
+                    localStorage.removeItem(id + "_speechContinue");
                     break;
                 case "passage2":
                     localStorage.removeItem(id + "_voice");
                     localStorage.removeItem(id + "_speechRate");
                     localStorage.removeItem(id + "_speechPosition");
+                    localStorage.removeItem(id + "_speechFollow");
+                    localStorage.removeItem(id + "_speechContinue");
                     localStorage.removeItem(id + "_index");
                     localStorage.removeItem(id + "_version");
                     break;

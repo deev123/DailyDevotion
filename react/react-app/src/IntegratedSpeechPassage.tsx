@@ -52,7 +52,7 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
     const sectionRef = useRef<HTMLElement>(null);
     const headerRef = useRef<HTMLDivElement>(null);
     const playerState = useRef<PlayerState>({ open: false, playing: false });
-    const [resumePlayer, setResumePlayer] = useState<PlayerState>({ open: false, playing: false });
+    const [resumePlayer, setResumePlayer] = useState<PlayerState & { generation?: number }>({ open: false, playing: false });
     function prepareChapterChange() {
         setResumePlayer({ ...playerState.current });
         stopPlayerRef.current?.();
@@ -125,6 +125,16 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
             saveIndex(result);
             return result;
         });
+    }
+
+    async function continueToNextChapter(isCurrent: () => boolean, generation: number): Promise<boolean> {
+        const nextIndex = index + 1;
+        if (!isCurrent() || nextIndex >= listElements.length) return false;
+        saveIndex(nextIndex);
+        setResumePlayer({ open: true, playing: true, generation });
+        setHtml("");
+        setIndex(nextIndex);
+        return true;
     }
 
     // produce a localized label for a reading list entry like "1 John 3".
@@ -283,7 +293,8 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
         <div className="passage-body">
             {error ? <p className="passage-error">{error}</p>
              : html ? <SpeechPassage key={`${index}-${versionId}`} html={html} id={id} passageKey={`${reference}|${versionId}`} passageIndex={index} playerTriggerContainer={playerTriggerContainer} stopPlayerRef={stopPlayerRef}
-                 initialOpen={resumePlayer.open} autoPlay={resumePlayer.playing}
+                 initialOpen={resumePlayer.open} autoPlay={resumePlayer.playing} autoPlayGeneration={resumePlayer.generation}
+                 onContinueChapter={continueToNextChapter}
                  onPlayerStateChange={state => { playerState.current = state; }}
                  language={versions.find(version => version.id === versionId)?.languageTag || "en"} /> : <p>...</p>}
         </div>

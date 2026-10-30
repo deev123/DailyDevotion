@@ -2,15 +2,16 @@ import { useEffect, useEffectEvent, useMemo, useRef, useState, type RefObject } 
 import { createPortal } from "react-dom";
 import ListPicker from "./ListPicker.tsx";
 import { segmentInlineText } from "./speechText.ts";
+import { followSpeechHighlight } from "./speechFollow.ts";
 
 // Speech synthesis is shared by the whole browser tab. Only the current owner
 // may cancel it, so deleting an idle widget cannot stop a different reader.
 let stopActiveReader: (() => void) | null = null;
 let playbackGeneration = 0;
 
-export type PlayerState = { open: boolean; playing: boolean };
+export type PlayerState = { open: boolean; playing: boolean; generation?: number };
 
-type Props = { mergeInlineText?: boolean; textContainer?: HTMLElement | null; initialOpen?: boolean; onPlayerStateChange?: (state: PlayerState) => void; autoPlay?: boolean; onComplete?: (isCurrent: () => boolean) => Promise<boolean>; hideText?: boolean; onPlaybackStart?: () => void; onPlayerOpen?: () => void; html: string; id: string; language: string; passageKey?: string; passageIndex?: number; playerTriggerContainer?: HTMLElement | null; stopPlayerRef?: RefObject<(() => void) | null> };
+type Props = { defaultFollow?: boolean; autoPlayGeneration?: number; onContinueChapter?: (isCurrent: () => boolean, generation: number) => Promise<boolean>; mergeInlineText?: boolean; textContainer?: HTMLElement | null; initialOpen?: boolean; onPlayerStateChange?: (state: PlayerState) => void; autoPlay?: boolean; onComplete?: (isCurrent: () => boolean) => Promise<boolean>; hideText?: boolean; onPlaybackStart?: () => void; onPlayerOpen?: () => void; html: string; id: string; language: string; passageKey?: string; passageIndex?: number; playerTriggerContainer?: HTMLElement | null; stopPlayerRef?: RefObject<(() => void) | null> };
 type Sentence = { text: string; index: number };
 
 // Wrap readable text in place so the experimental reader retains the source
@@ -95,14 +96,19 @@ function readPosition(id: string, passageKey: string): number {
     } catch { return 0; }
 }
 
-export default function SpeechPassage({ mergeInlineText = false, textContainer, initialOpen = false, onPlayerStateChange, autoPlay = false, onComplete, hideText = false, onPlaybackStart, onPlayerOpen, html, id, language, passageKey = "", passageIndex, playerTriggerContainer, stopPlayerRef }: Props) {
+export default function SpeechPassage({ defaultFollow = false, autoPlayGeneration, onContinueChapter, mergeInlineText = false, textContainer, initialOpen = false, onPlayerStateChange, autoPlay = false, onComplete, hideText = false, onPlaybackStart, onPlayerOpen, html, id, language, passageKey = "", passageIndex, playerTriggerContainer, stopPlayerRef }: Props) {
     const supported = typeof window.speechSynthesis !== "undefined" && typeof SpeechSynthesisUtterance !== "undefined";
+    const [follow, setFollow] = useState(() => readPreference(id + "_speechFollow", String(defaultFollow)) === "true");
+    const [continueChapter, setContinueChapter] = useState(() => readPreference(id + "_speechContinue", "false") === "true");
+    const continueChapterRef = useRef(continueChapter);
+    const textRef = useRef<HTMLDivElement>(null);
     const [voices, setVoices] = useState<SpeechSynthesisVoice[]>(() => supported ? window.speechSynthesis.getVoices() : []);
     const [selectedVoice, setSelectedVoice] = useState(() => readPreference(id + "_voice", ""));
     const [rate, setRate] = useState(() => {
         const saved = Number(readPreference(id + "_speechRate", "1"));
         return Number.isFinite(saved) ? Math.max(0.5, Math.min(2, saved)) : 1;
     });
+    const [playerGeneration, setPlayerGeneration] = useState(0);
     const [status, setStatus] = useState<"idle" | "playing" | "paused" | "ended">("idle");
     const [initialPosition] = useState(() => readPosition(id, passageKey));
     const [sentenceIndex, setSentenceIndex] = useState(initialPosition);
@@ -122,8 +128,8 @@ export default function SpeechPassage({ mergeInlineText = false, textContainer, 
     const mountGeneration = useRef(playbackGeneration);
 
     useEffect(() => {
-        onPlayerStateChange?.({ open: playerOpen, playing: status === "playing" });
-    }, [playerOpen, status, onPlayerStateChange]);
+        onPlayerStateChange?.({ open: playerOpen, playing: status === "playing", generation: status === "playing" ? playerGeneration : undefined });
+    }, [playerOpen, status, playerGeneration, onPlayerStateChange]);
 
     const stopPlayback = useEffectEvent(() => pause());
     useEffect(() => {
@@ -161,6 +167,11 @@ export default function SpeechPassage({ mergeInlineText = false, textContainer, 
         });
         return doc.body.innerHTML;
     }, [integratedPassage, status, currentPosition, word]);
+    useEffect(() => {
+        if (!follow || status !== "playing" || document.hidden || !textRef.current) return;
+        followSpeechHighlight(textRef.current);
+    }, [follow, status, currentPosition, word, highlightedMarkup, textContainer]);
+
     const voice = selectedVoice ? voices.find(item => voiceKey(item) === selectedVoice)
         : voices.find(item => item.lang.toLowerCase() === language.toLowerCase())
         ?? voices.find(item => item.lang.split("-")[0] === language.split("-")[0])
@@ -232,7 +243,8 @@ export default function SpeechPassage({ mergeInlineText = false, textContainer, 
         const key = voiceKey(playbackVoice);
         setSelectedVoice(key);
         savePreference("_voice", key);
-        playbackGeneration++;
+        const generation = ++playbackGeneration;
+        setPlayerGeneration(generation);
         onPlaybackStart?.();
         start = Math.min(Math.max(0, start), sentences.length - 1);
         const synth = window.speechSynthesis;
@@ -264,15 +276,16 @@ export default function SpeechPassage({ mergeInlineText = false, textContainer, 
                     setWord(null);
                     setStatus("ended");
                 };
-                if (onComplete) {
-                    // Retain ownership while the PDF finds its next readable page.
+                const continueReading = onComplete ?? (continueChapterRef.current ? onContinueChapter : undefined);
+                if (continueReading) {
+                    // Retain ownership while the next page or chapter is selected.
                     // Pause, closing the player, or another reader invalidates this session.
-                    void onComplete(() => speechSessionRef.current === session).then(continued => {
+                    void continueReading(() => speechSessionRef.current === session, generation).then(continued => {
                         if (!continued) finish();
                     }).catch(() => {
                         if (speechSessionRef.current !== session) return;
                         pause();
-                        setError("Could not load the next page. Press Play to retry.");
+                        setError("Could not continue reading. Press Play to retry.");
                     });
                 } else finish();
                 return;
@@ -354,7 +367,7 @@ export default function SpeechPassage({ mergeInlineText = false, textContainer, 
 
     const startAutomatically = useEffectEvent(() => {
         if (autoPlayConsumed.current) return;
-        if (mountGeneration.current !== playbackGeneration) {
+        if ((autoPlayGeneration ?? mountGeneration.current) !== playbackGeneration) {
             autoPlayConsumed.current = true;
             return;
         }
@@ -367,6 +380,11 @@ export default function SpeechPassage({ mergeInlineText = false, textContainer, 
         const timer = window.setTimeout(() => startAutomatically(), 0);
         return () => window.clearTimeout(timer);
     }, [autoPlay, voice]);
+
+    function changeFollow(value: boolean) {
+        setFollow(value);
+        savePreference("_speechFollow", String(value));
+    }
 
     function changeRate(value: number) {
         // Browser speech rates cannot be changed on an utterance already in
@@ -431,6 +449,11 @@ export default function SpeechPassage({ mergeInlineText = false, textContainer, 
                                 else setStatus("paused");
                             }} />
                     </label>
+                    <button type="button" className={`speech-icon-button${follow ? " speech-follow-active" : ""}`}
+                        aria-label="Follow highlighted text" aria-pressed={follow} title={`Follow highlighted text: ${follow ? "on" : "off"}`}
+                        onClick={() => changeFollow(!follow)}>
+                        <span className="material-icons" aria-hidden="true">my_location</span>
+                    </button>
                     <button type="button" className="speech-icon-button" aria-label="Read aloud settings"
                         aria-haspopup="dialog" onClick={() => settingsRef.current?.showModal()}>
                         <span className="material-icons" aria-hidden="true">settings</span>
@@ -465,12 +488,24 @@ export default function SpeechPassage({ mergeInlineText = false, textContainer, 
                             changeRate(Number(event.target.value));
                         }} />
                     </label>
+                    <label className="speech-settings-toggle">
+                        <input type="checkbox" checked={follow} onChange={event => changeFollow(event.target.checked)} />
+                        Follow highlighted text
+                    </label>
+                    {onContinueChapter && <label className="speech-settings-toggle">
+                        <input type="checkbox" checked={continueChapter} onChange={event => {
+                            continueChapterRef.current = event.target.checked;
+                            setContinueChapter(event.target.checked);
+                            savePreference("_speechContinue", String(event.target.checked));
+                        }} />
+                        Continue to the next chapter
+                    </label>}
                     <p className="speech-caption">Online voices may send text to a speech service.</p>
                 </div>
             </dialog>, document.body)}
         </div>
         {textContainer
-            ? createPortal(<div className="speech-integrated-text" dangerouslySetInnerHTML={{ __html: highlightedMarkup }} />, textContainer)
-            : !hideText && <div className="speech-integrated-text" dangerouslySetInnerHTML={{ __html: highlightedMarkup }} />}
+            ? createPortal(<div ref={textRef} className="speech-integrated-text" dangerouslySetInnerHTML={{ __html: highlightedMarkup }} />, textContainer)
+            : !hideText && <div ref={textRef} className="speech-integrated-text" dangerouslySetInnerHTML={{ __html: highlightedMarkup }} />}
     </div>;
 }
