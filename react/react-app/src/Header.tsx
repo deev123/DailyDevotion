@@ -1,10 +1,23 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import SettingsSidebar from "./SettingsSidebar.tsx"
 import Streak from "./Streak.tsx"
+import type { ComponentConfig } from "./layoutStorage.ts"
 
-function Header() {
+function Header({ components }: { components: ComponentConfig[] }) {
     const [hidden, setHidden] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const navigating = useRef(false);
+    const navigationTimer = useRef<number | undefined>(undefined);
+
+    function keepHeaderVisible() {
+        navigating.current = true;
+        setHidden(false);
+        window.clearTimeout(navigationTimer.current);
+        navigationTimer.current = window.setTimeout(() => {
+            navigating.current = false;
+            setHidden(false);
+        }, 200);
+    }
 
     useEffect(() => {
         let previousY = Math.max(0, window.scrollY);
@@ -18,6 +31,12 @@ function Header() {
             const delta = y - previousY;
             previousY = y;
 
+            if (navigating.current) {
+                keepHeaderVisible();
+                distance = 0;
+                direction = 0;
+                return;
+            }
             if (settingsOpen || y <= 48) {
                 setHidden(false);
                 distance = 0;
@@ -37,10 +56,12 @@ function Header() {
         return () => window.removeEventListener("scroll", onScroll);
     }, [settingsOpen]);
 
+    useEffect(() => () => window.clearTimeout(navigationTimer.current), []);
+
     return (
         <header className={"top-header" + (hidden && !settingsOpen ? " header-hidden" : "")}>
             <Streak />
-            <SettingsSidebar onOpenChange={setSettingsOpen} />
+            <SettingsSidebar onOpenChange={setSettingsOpen} onNavigate={keepHeaderVisible} components={components} />
         </header>
     );
 }

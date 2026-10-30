@@ -220,7 +220,7 @@ function Layout(){
 
     // wraps the layout; the settings button is fixed-position so it floats over everything
     let elements = <>
-        <Header/>
+        <Header components={componentsConfig}/>
         <div className="container">
         {layoutError && <p className="passage-error" role="alert">{layoutError}</p>}
         {
@@ -243,20 +243,27 @@ function Layout(){
 
             // console.log(layoutControls);
 
+            let content;
             switch(c.type){
                 case "pdfReader":
-                    return <Suspense key={c.id} fallback={<section><p>Loading PDF reader…</p></section>}>
+                    content = <Suspense fallback={<section><p>Loading PDF reader…</p></section>}>
                         <PdfReader layoutOptions={layoutOptions} id={c.id}/>
                     </Suspense>;
+                    break;
                 case "notebox":
-                    return <NoteBox layoutOptions={layoutOptions} id={c.id} key={c.id}/>;
+                    content = <NoteBox layoutOptions={layoutOptions} id={c.id}/>;
+                    break;
                 case "videoPlaylist":
-                    return <VideoPlaylist layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
+                    content = <VideoPlaylist layoutOptions={layoutOptions} id={c.id} list={c.list}/>;
+                    break;
                 case "passage2":
-                    return <IntegratedSpeechPassage layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
+                    content = <IntegratedSpeechPassage layoutOptions={layoutOptions} id={c.id} list={c.list}/>;
+                    break;
                 case "catechism":
-                    return <Catechism layoutOptions={layoutOptions} id={c.id} list={c.list} key={c.id}/>;
+                    content = <Catechism layoutOptions={layoutOptions} id={c.id} list={c.list}/>;
+                    break;
                 }
+            return <div className="layout-section" id={`contents-${c.id}`} role="region" aria-label="Section" tabIndex={-1} key={c.id}>{content}</div>;
             })
         }
         <section className="add-component-container">

@@ -4,6 +4,7 @@ import ColourPicker from "./ColourPicker.tsx"
 import DeleteData from "./DeleteData.tsx"
 import ListPicker from "./ListPicker.tsx"
 import { hasReadableContrast, readableText } from "./themeContrast"
+import type { ComponentConfig } from "./layoutStorage.ts"
 
 const THEME_PRESETS = [
     { id: "dark", label: "Dark", background: "#1e1e1e", text: "#d7d7d7" },
@@ -47,11 +48,12 @@ function readNumberSetting(key: string, fallback: number, min: number, max: numb
 
 // small settings sidebar: a hamburger button that opens a sliding panel.
 // Colours and font are applied through CSS variables on <html>.
-function SettingsSidebar({ onOpenChange }: { onOpenChange: (open: boolean) => void }) {
+function SettingsSidebar({ onOpenChange, onNavigate, components }: { onOpenChange: (open: boolean) => void; onNavigate: () => void; components: ComponentConfig[] }) {
 
     const [open, setOpen] = useState(false);
     // tracks whether we're animating closed but not yet removed from the DOM
     const [closing, setClosing] = useState(false);
+    const [contents, setContents] = useState<{ id: string; label: string }[]>([]);
 
     const [background, setBackground] = useState("");
     const [text, setText] = useState("");
@@ -111,19 +113,44 @@ function SettingsSidebar({ onOpenChange }: { onOpenChange: (open: boolean) => vo
     }
 
     // close with a quick exit animation, then remove from the DOM
-    function closeSidebar() {
+    function closeSidebar(afterClose?: () => void) {
+        if (closing) return;
         setClosing(true);
         setTimeout(() => {
             setOpen(false);
             onOpenChange(false);
             setClosing(false);
+            afterClose?.();
         }, 120); // slightly faster than the open animation
+    }
+
+    function getContents() {
+        return components.map(component => {
+            const section = document.getElementById(`contents-${component.id}`);
+            const fallback = { passage2: "Passage", notebox: "Notes", videoPlaylist: "Video playlist", catechism: "Heidelberg Catechism", pdfReader: "PDF reader" }[component.type];
+            const selector = component.type === "notebox" ? ".notes-header h2" : component.type === "pdfReader" ? ".pdf-title-button" : ".passage-header .reading-title-select > span:first-child";
+            const label = section?.querySelector(selector)?.textContent?.trim();
+            return { id: component.id, label: label && label !== "Choose a PDF" && !label.startsWith("Select ") ? label : fallback };
+        });
+    }
+
+    function goToSection(id: string, label: string) {
+        closeSidebar(() => {
+            const target = document.getElementById(`contents-${id}`);
+            if (!target) return;
+            target.setAttribute("aria-label", label);
+            target.focus({ preventScroll: true });
+            const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            onNavigate();
+            target.scrollIntoView({ behavior: reducedMotion ? "instant" : "smooth", block: "start" });
+        });
     }
 
     function toggleSidebar() {
         if (open) {
             closeSidebar();
         } else {
+            setContents(getContents());
             setOpen(true);
             onOpenChange(true);
         }
@@ -173,7 +200,7 @@ function SettingsSidebar({ onOpenChange }: { onOpenChange: (open: boolean) => vo
     <>
             <button
                 className="material-icons hamburger-button"
-                aria-label="Settings"
+                aria-label="Menu"
                 aria-expanded={open}
                 onClick={(e) => { e.stopPropagation(); toggleSidebar(); }}
             >
@@ -181,24 +208,32 @@ function SettingsSidebar({ onOpenChange }: { onOpenChange: (open: boolean) => vo
             </button>
 
         {(open || closing) && createPortal(
-            <div className={"sidebar-overlay" + (closing ? " closing" : "")} onClick={closeSidebar}>
+            <div className={"sidebar-overlay" + (closing ? " closing" : "")} onClick={() => closeSidebar()}>
                 <aside
                     className="settings-sidebar"
                     role="dialog"
                     aria-modal="true"
-                    aria-label="Settings"
+                    aria-label="Menu"
                     tabIndex={-1}
                     ref={sidebarRef}
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="settings-sidebar-header">
-                        <span>Settings</span>
+                        <span>Menu</span>
                         <button
                             className="material-icons hamburger-button"
-                            aria-label="Close settings"
-                            onClick={closeSidebar}
+                            aria-label="Close menu"
+                            onClick={() => closeSidebar()}
                         >close</button>
                     </div>
+
+                    <nav className="contents-nav" aria-label="Contents">
+                        <h2>Contents</h2>
+                        {contents.length ? <ol>{contents.map(item => <li key={item.id}>
+                            <button type="button" onClick={() => goToSection(item.id, item.label)}>{item.label}</button>
+                        </li>)}</ol> : <p>No sections added yet.</p>}
+                    </nav>
+                    <h2 className="settings-heading">Settings</h2>
 
                     <fieldset className="theme-selector">
                         <legend>Theme</legend>
