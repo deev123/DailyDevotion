@@ -510,6 +510,49 @@ p
   margin: 0;
 }
 
+.catechism-proofs { margin-top: 1rem; }
+.catechism-proofs h3 { font-size: 1rem; margin: 0 0 .4rem; }
+.catechism-proofs p { margin: .25rem 0; }
+.catechism-proof-number { font-weight: 700; }
+.catechism-reference {
+  border: 0;
+  padding: 2px 0;
+  background: transparent;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}
+.passage-picker.catechism-dialog {
+  width: min(520px, calc(100% - 24px));
+  padding: 20px 24px 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.catechism-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.catechism-dialog-header h2 { margin: 0; font-size: 1.2rem; line-height: 1.35; }
+.passage-picker.catechism-dialog .catechism-dialog-header button {
+  flex-shrink: 0;
+  width: 44px;
+  padding: 0;
+  font-size: 1.5rem;
+}
+.catechism-dialog .catechism-translation {
+  margin: 4px 0 16px;
+  color: var(--text-muted);
+  font-size: .875rem;
+}
+.catechism-dialog .passage-body { margin: 0; line-height: 1.7; }
+.catechism-dialog small {
+  display: block;
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
 /* version picker under the chapter select */
 .version-header
 {
