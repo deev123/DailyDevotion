@@ -108,6 +108,12 @@ function Layout(){
                     localStorage.removeItem(id + "_index");
                     localStorage.removeItem(id + "_videoPositions");
                     break;
+                case "pdfReader":
+                    localStorage.removeItem(id + "_pdfSections");
+                    localStorage.removeItem(id + "_voice");
+                    localStorage.removeItem(id + "_speechRate");
+                    localStorage.removeItem(id + "_speechPosition");
+                    break;
                 case "passage2":
                     localStorage.removeItem(id + "_voice");
                     localStorage.removeItem(id + "_speechRate");

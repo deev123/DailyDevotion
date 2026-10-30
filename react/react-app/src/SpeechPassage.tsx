@@ -1,17 +1,21 @@
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import ListPicker from "./ListPicker.tsx";
+import { segmentInlineText } from "./speechText.ts";
 
 // Speech synthesis is shared by the whole browser tab. Only the current owner
 // may cancel it, so deleting an idle widget cannot stop a different reader.
 let stopActiveReader: (() => void) | null = null;
+let playbackGeneration = 0;
 
-type Props = { html: string; id: string; language: string; passageKey?: string; passageIndex?: number; playerTriggerContainer?: HTMLElement | null; stopPlayerRef?: RefObject<(() => void) | null> };
+export type PlayerState = { open: boolean; playing: boolean };
+
+type Props = { mergeInlineText?: boolean; textContainer?: HTMLElement | null; initialOpen?: boolean; onPlayerStateChange?: (state: PlayerState) => void; autoPlay?: boolean; onComplete?: (isCurrent: () => boolean) => Promise<boolean>; hideText?: boolean; onPlaybackStart?: () => void; onPlayerOpen?: () => void; html: string; id: string; language: string; passageKey?: string; passageIndex?: number; playerTriggerContainer?: HTMLElement | null; stopPlayerRef?: RefObject<(() => void) | null> };
 type Sentence = { text: string; index: number };
 
 // Wrap readable text in place so the experimental reader retains the source
 // markup, including verse labels, headings, links, and poetry formatting.
-function prepareIntegratedPassage(html: string, language: string): { markup: string; paragraphs: Sentence[][] } {
+function prepareIntegratedPassage(html: string, language: string, mergeInlineText: boolean): { markup: string; paragraphs: Sentence[][] } {
     const doc = new DOMParser().parseFromString(html, "text/html");
     const excluded = [
         "script", "style", "noscript", "sup", "[hidden]", "[aria-hidden='true']",
@@ -24,7 +28,7 @@ function prepareIntegratedPassage(html: string, language: string): { markup: str
     const nodes: Text[] = [];
     while (walker.nextNode()) {
         const node = walker.currentNode as Text;
-        if (!node.parentElement?.closest(excluded) && /[\p{L}\p{N}]/u.test(node.data)) nodes.push(node);
+        if (!node.parentElement?.closest(excluded) && (mergeInlineText || /[\p{L}\p{N}]/u.test(node.data))) nodes.push(node);
     }
     let segmenter: Intl.Segmenter | null = null;
     if (typeof Intl.Segmenter !== "undefined") {
@@ -32,6 +36,29 @@ function prepareIntegratedPassage(html: string, language: string): { markup: str
         catch { segmenter = new Intl.Segmenter("en", { granularity: "sentence" }); }
     }
     const sentences: Sentence[] = [];
+    if (mergeInlineText) {
+        // PDF font changes create multiple text nodes inside one sentence.
+        // Segment their combined text first, then map each sentence back onto
+        // the original nodes so formatting and word highlighting both survive.
+        const mapped = segmentInlineText(nodes.map(node => node.data), language);
+        sentences.push(...mapped.sentences);
+        nodes.forEach((node, index) => {
+            const fragment = doc.createDocumentFragment();
+            mapped.fragments[index].forEach(part => {
+                if (part.index === undefined) {
+                    fragment.append(doc.createTextNode(part.text));
+                } else {
+                    const span = doc.createElement("span");
+                    span.dataset.speechIndex = String(part.index);
+                    span.dataset.speechOffset = String(part.offset ?? 0);
+                    span.textContent = part.text;
+                    fragment.append(span);
+                }
+            });
+            node.replaceWith(fragment);
+        });
+        return { markup: doc.body.innerHTML, paragraphs: [sentences] };
+    }
     nodes.forEach(node => {
         const segments = segmenter ? Array.from(segmenter.segment(node.data), item => item.segment)
             : node.data.match(/[^.!?。！？]+[.!?。！？]*\s*/gu) ?? [node.data];
@@ -68,9 +95,9 @@ function readPosition(id: string, passageKey: string): number {
     } catch { return 0; }
 }
 
-export default function SpeechPassage({ html, id, language, passageKey = "", passageIndex, playerTriggerContainer, stopPlayerRef }: Props) {
+export default function SpeechPassage({ mergeInlineText = false, textContainer, initialOpen = false, onPlayerStateChange, autoPlay = false, onComplete, hideText = false, onPlaybackStart, onPlayerOpen, html, id, language, passageKey = "", passageIndex, playerTriggerContainer, stopPlayerRef }: Props) {
     const supported = typeof window.speechSynthesis !== "undefined" && typeof SpeechSynthesisUtterance !== "undefined";
-    const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+    const [voices, setVoices] = useState<SpeechSynthesisVoice[]>(() => supported ? window.speechSynthesis.getVoices() : []);
     const [selectedVoice, setSelectedVoice] = useState(() => readPreference(id + "_voice", ""));
     const [rate, setRate] = useState(() => {
         const saved = Number(readPreference(id + "_speechRate", "1"));
@@ -81,7 +108,7 @@ export default function SpeechPassage({ html, id, language, passageKey = "", pas
     const [sentenceIndex, setSentenceIndex] = useState(initialPosition);
     const [word, setWord] = useState<{ start: number; end: number } | null>(null);
     const [error, setError] = useState("");
-    const [playerOpen, setPlayerOpen] = useState(false);
+    const [playerOpen, setPlayerOpen] = useState(initialOpen || autoPlay);
     const settingsRef = useRef<HTMLDialogElement>(null);
     const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
     const wordStartRef = useRef<number | null>(null);
@@ -91,12 +118,19 @@ export default function SpeechPassage({ html, id, language, passageKey = "", pas
     const rateChangeRef = useRef<number | null>(null);
     const stopRef = useRef<(() => void) | null>(null);
     const positionRef = useRef(initialPosition);
+    const autoPlayConsumed = useRef(false);
+    const mountGeneration = useRef(playbackGeneration);
 
+    useEffect(() => {
+        onPlayerStateChange?.({ open: playerOpen, playing: status === "playing" });
+    }, [playerOpen, status, onPlayerStateChange]);
+
+    const stopPlayback = useEffectEvent(() => pause());
     useEffect(() => {
         if (!stopPlayerRef) return;
         // Stop only this reader; speech synthesis is shared across the tab.
         const stop = () => {
-            if (stopRef.current && stopActiveReader === stopRef.current) stopRef.current();
+            stopPlayback();
         };
         stopPlayerRef.current = stop;
         return () => {
@@ -104,26 +138,31 @@ export default function SpeechPassage({ html, id, language, passageKey = "", pas
         };
     }, [stopPlayerRef]);
 
-    const integratedPassage = useMemo(() => prepareIntegratedPassage(html, language), [html, language]);
+    const integratedPassage = useMemo(() => prepareIntegratedPassage(html, language, mergeInlineText), [html, language, mergeInlineText]);
     const sentences = useMemo(() => integratedPassage.paragraphs.flat(), [integratedPassage]);
     const currentPosition = Math.min(sentenceIndex, Math.max(0, sentences.length - 1));
     const highlightedMarkup = useMemo(() => {
         if (status !== "playing" && status !== "paused") return integratedPassage.markup;
         const doc = new DOMParser().parseFromString(integratedPassage.markup, "text/html");
-        const active = doc.querySelector(`[data-speech-index="${currentPosition}"]`);
-        if (active) {
-            active.classList.add("speech-sentence-active");
+        const active = doc.querySelectorAll<HTMLElement>(`[data-speech-index="${currentPosition}"]`);
+        active.forEach(span => {
+            span.classList.add("speech-sentence-active");
             if (word) {
-                const text = active.textContent ?? "";
-                const mark = doc.createElement("mark");
-                mark.textContent = text.slice(word.start, word.end);
-                active.replaceChildren(doc.createTextNode(text.slice(0, word.start)), mark, doc.createTextNode(text.slice(word.end)));
+                const text = span.textContent ?? "";
+                const offset = Number(span.dataset.speechOffset ?? 0);
+                const start = Math.max(0, word.start - offset);
+                const end = Math.min(text.length, word.end - offset);
+                if (end > start) {
+                    const mark = doc.createElement("mark");
+                    mark.textContent = text.slice(start, end);
+                    span.replaceChildren(doc.createTextNode(text.slice(0, start)), mark, doc.createTextNode(text.slice(end)));
+                }
             }
-        }
+        });
         return doc.body.innerHTML;
     }, [integratedPassage, status, currentPosition, word]);
-    const voice = voices.find(item => voiceKey(item) === selectedVoice)
-        ?? voices.find(item => item.lang.toLowerCase() === language.toLowerCase())
+    const voice = selectedVoice ? voices.find(item => voiceKey(item) === selectedVoice)
+        : voices.find(item => item.lang.toLowerCase() === language.toLowerCase())
         ?? voices.find(item => item.lang.split("-")[0] === language.split("-")[0])
         ?? voices.find(item => item.default) ?? voices[0];
 
@@ -164,6 +203,7 @@ export default function SpeechPassage({ html, id, language, passageKey = "", pas
     }
 
     function pause() {
+        autoPlayConsumed.current = true;
         speechSessionRef.current++;
         if (watchdogRef.current !== null) window.clearInterval(watchdogRef.current);
         if (nextSpeechRef.current !== null) window.clearTimeout(nextSpeechRef.current);
@@ -182,7 +222,18 @@ export default function SpeechPassage({ html, id, language, passageKey = "", pas
     }
 
     function play(start: number, playbackRate = rate, startOffset = 0, playbackVoice: SpeechSynthesisVoice | null = voice ?? null) {
+        autoPlayConsumed.current = true;
         if (!supported || !sentences.length) return;
+        if (!playbackVoice) {
+            setError("Your selected voice is not available yet. Wait for it to load or choose another voice in settings.");
+            return;
+        }
+        // Pin even an automatically chosen voice across chapter/page remounts.
+        const key = voiceKey(playbackVoice);
+        setSelectedVoice(key);
+        savePreference("_voice", key);
+        playbackGeneration++;
+        onPlaybackStart?.();
         start = Math.min(Math.max(0, start), sentences.length - 1);
         const synth = window.speechSynthesis;
         const previousReader = stopActiveReader;
@@ -193,6 +244,7 @@ export default function SpeechPassage({ html, id, language, passageKey = "", pas
         stopRef.current = pause;
         stopActiveReader = pause;
         setError("");
+        setPlayerOpen(true);
         setStatus("playing");
         function clearWatchdog() {
             if (watchdogRef.current !== null) window.clearInterval(watchdogRef.current);
@@ -203,12 +255,26 @@ export default function SpeechPassage({ html, id, language, passageKey = "", pas
             clearWatchdog();
             if (index >= sentences.length) {
                 utteranceRef.current = null;
-                stopActiveReader = null;
-                positionRef.current = 0;
-                setSentenceIndex(0);
-                savePosition(0);
-                setWord(null);
-                setStatus("ended");
+                const finish = () => {
+                    if (speechSessionRef.current !== session) return;
+                    stopActiveReader = null;
+                    positionRef.current = 0;
+                    setSentenceIndex(0);
+                    savePosition(0);
+                    setWord(null);
+                    setStatus("ended");
+                };
+                if (onComplete) {
+                    // Retain ownership while the PDF finds its next readable page.
+                    // Pause, closing the player, or another reader invalidates this session.
+                    void onComplete(() => speechSessionRef.current === session).then(continued => {
+                        if (!continued) finish();
+                    }).catch(() => {
+                        if (speechSessionRef.current !== session) return;
+                        pause();
+                        setError("Could not load the next page. Press Play to retry.");
+                    });
+                } else finish();
                 return;
             }
             positionRef.current = index;
@@ -255,15 +321,15 @@ export default function SpeechPassage({ html, id, language, passageKey = "", pas
             utterance.onend = () => {
                 if (utteranceRef.current !== utterance || speechSessionRef.current !== session) return;
                 clearWatchdog();
+                utteranceRef.current = null;
                 // Let the browser finish processing this utterance before queuing the next one.
                 nextSpeechRef.current = window.setTimeout(() => {
                     nextSpeechRef.current = null;
-                    if (utteranceRef.current === utterance && speechSessionRef.current === session) speak(index + 1);
+                    if (speechSessionRef.current === session) speak(index + 1);
                 }, 0);
             };
             utterance.onerror = event => {
-                if (utteranceRef.current !== utterance) return;
-                if (event.error === "interrupted" || event.error === "canceled") { retry(); return; }
+                if (utteranceRef.current !== utterance || speechSessionRef.current !== session) return;
                 pause();
                 setError(`Speech could not continue (${event.error}). Try another voice or press Play again.`);
             };
@@ -285,6 +351,22 @@ export default function SpeechPassage({ html, id, language, passageKey = "", pas
             if (speechSessionRef.current === session) speak(start, startOffset);
         }, 100);
     }
+
+    const startAutomatically = useEffectEvent(() => {
+        if (autoPlayConsumed.current) return;
+        if (mountGeneration.current !== playbackGeneration) {
+            autoPlayConsumed.current = true;
+            return;
+        }
+        play(0);
+    });
+    useEffect(() => {
+        if (!autoPlay || !voice) return;
+        // Voice discovery can be asynchronous. Never start with a fallback voice,
+        // and never let a pending automatic start restart manually paused speech.
+        const timer = window.setTimeout(() => startAutomatically(), 0);
+        return () => window.clearTimeout(timer);
+    }, [autoPlay, voice]);
 
     function changeRate(value: number) {
         // Browser speech rates cannot be changed on an utterance already in
@@ -319,7 +401,8 @@ export default function SpeechPassage({ html, id, language, passageKey = "", pas
             {playerTriggerContainer && createPortal(<button type="button" className="speech-icon-button speech-player-toggle" aria-label={playerOpen ? "Close read aloud player" : "Open read aloud player"}
                 title={playerOpen ? "Close read aloud player" : "Open read aloud player"}
                 aria-expanded={playerOpen} aria-controls={playerOpen ? `${id}-read-aloud-player` : undefined} onClick={() => {
-                    if (playerOpen && status === "playing") pause();
+                    if (playerOpen) pause();
+                    if (!playerOpen) onPlayerOpen?.();
                     setPlayerOpen(!playerOpen);
                 }}>
                 <span className="material-icons" aria-hidden="true">{playerOpen ? "close" : "volume_up"}</span>
@@ -353,6 +436,7 @@ export default function SpeechPassage({ html, id, language, passageKey = "", pas
                         <span className="material-icons" aria-hidden="true">settings</span>
                     </button>
                 </>}
+                {hideText && !sentences.length && <p role="status">No readable text on this page. Scanned pages may contain only images.</p>}
                 {error && <p className="passage-error" role="alert">{error}</p>}
             </div>}
             {!playerOpen && error && <p className="passage-error" role="alert">{error}</p>}
@@ -375,7 +459,7 @@ export default function SpeechPassage({ html, id, language, passageKey = "", pas
                             const nextVoice = voices[index];
                             if (nextVoice) changeVoice(nextVoice);
                         }} />
-                    {!voices.length && <p className="speech-caption">Browser voices are loading.</p>}
+                    {!voice && <p className="speech-caption">{selectedVoice ? "Waiting for your selected voice. You can choose another voice above." : "Browser voices are loading."}</p>}
                     <label>Speed: {rate.toFixed(1)}×
                         <input type="range" min="0.5" max="2" step="0.1" value={rate} onChange={event => {
                             changeRate(Number(event.target.value));
@@ -385,6 +469,8 @@ export default function SpeechPassage({ html, id, language, passageKey = "", pas
                 </div>
             </dialog>, document.body)}
         </div>
-        <div className="speech-integrated-text" dangerouslySetInnerHTML={{ __html: highlightedMarkup }} />
+        {textContainer
+            ? createPortal(<div className="speech-integrated-text" dangerouslySetInnerHTML={{ __html: highlightedMarkup }} />, textContainer)
+            : !hideText && <div className="speech-integrated-text" dangerouslySetInnerHTML={{ __html: highlightedMarkup }} />}
     </div>;
 }

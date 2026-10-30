@@ -4,7 +4,7 @@ const appKeys = [
     "componentsConfig", "streak", "themeBackground", "themeText", "themePreset",
     "themeCustomBackground", "themeCustomText", "themeFont", "themeFontSize", "themeLetterSpacing",
 ];
-const componentSuffixes = ["_index", "_version", "_title", "_text", "_state", "_voice", "_speechRate", "_speechPosition", "_videoPositions"];
+const componentSuffixes = ["_index", "_version", "_title", "_text", "_state", "_voice", "_speechRate", "_speechPosition", "_videoPositions", "_pdfSections"];
 
 /** Remove this app's data without clearing unrelated apps on the same origin. */
 export async function deleteAppData(): Promise<void> {

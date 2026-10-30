@@ -1,34 +1,69 @@
 import { useEffect, useMemo, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 // Include PDF.js compatibility helpers for browsers such as Samsung Internet.
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist/legacy/build/pdf.mjs"
 import type { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist"
 import workerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url"
+import type { PlayerState } from "./SpeechPassage.tsx"
+import SpeechPassage from "./SpeechPassage.tsx"
 import Menu from "./Menu.tsx"
 import type { MenuOption } from "./Menu.tsx"
+import { readPdfText } from "./pdfTextReader.ts"
+import { loadPdfSections, savePdfSections } from "./pdfSections.ts"
+import type { PdfSections } from "./pdfSections.ts"
 import { loadPdf, savePdf, savePdfProgress } from "./pdfStorage.ts"
 
 GlobalWorkerOptions.workerSrc = workerUrl;
 
 type PdfReaderProps = { id: string; layoutOptions: MenuOption[] };
 
+
 function PdfReader({ id, layoutOptions }: PdfReaderProps) {
     const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
     const [name, setName] = useState("");
     const [page, setPage] = useState(1);
     const [pageInput, setPageInput] = useState("1");
-    const [zoom, setZoom] = useState(1);
     const [width, setWidth] = useState(320);
     const [busy, setBusy] = useState(true);
     const [rendering, setRendering] = useState(false);
     const [error, setError] = useState("");
-    const [textPage, setTextPage] = useState<{ pdf: PDFDocumentProxy; page: number; text: string } | null>(null);
+    const [textPage, setTextPage] = useState<{ pdf: PDFDocumentProxy; page: number; text: string; html: string } | null>(null);
     const [wordIndex, setWordIndex] = useState(0);
     const [speed, setSpeed] = useState(300);
     const [running, setRunning] = useState(false);
     const [rampWords, setRampWords] = useState(0);
-    const [runnerOpen, setRunnerOpen] = useState(false);
+    const playerState = useRef<PlayerState>({ open: false, playing: false });
+    const [sections, setSections] = useState(() => loadPdfSections(id));
+    const sectionsRef = useRef(sections);
+    function setSection(section: Exclude<keyof PdfSections, "zoom">, open: boolean) {
+        if (sectionsRef.current[section] === open) return;
+        const next = { ...sectionsRef.current, [section]: open };
+        sectionsRef.current = next;
+        setSections(next);
+        savePdfSections(id, next);
+    }
+    function setZoom(zoom: PdfSections["zoom"]) {
+        if (sectionsRef.current.zoom === zoom) return;
+        const next = { ...sectionsRef.current, zoom };
+        sectionsRef.current = next;
+        setSections(next);
+        savePdfSections(id, next);
+    }
+    const zoom = sections.zoom;
+    const settingsRef = useRef<HTMLDialogElement>(null);
+    const runnerDialogRef = useRef<HTMLDialogElement>(null);
+    const fullscreenWordRef = useRef<HTMLButtonElement>(null);
+    const [fullscreenControls, setFullscreenControls] = useState(false);
+    const [settingsOpen, setSettingsOpen] = useState(false);
+    const [autoPlayPage, setAutoPlayPage] = useState<number | null>(null);
+    const runnerOpen = sections.runner;
+    const [textContainer, setTextContainer] = useState<HTMLDivElement | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const stopPlayerRef = useRef<(() => void) | null>(null);
+    const [playerTriggerContainer, setPlayerTriggerContainer] = useState<HTMLDivElement | null>(null);
     const textReady = textPage?.pdf === pdf && textPage?.page === page;
     const pageText = textReady ? textPage.text : "";
+    const speechHtml = textReady ? textPage.html : "";
     const words = useMemo(() => pageText.match(/\S+/gu) ?? [], [pageText]);
     const currentWord = Math.min(wordIndex, Math.max(0, words.length - 1));
     const currentSpeed = Math.round(Math.min(speed, Math.min(100, speed) + rampWords * 5));
@@ -94,7 +129,7 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
     }, []);
 
     useEffect(() => {
-        if (!pdf || !pageRef.current || width <= 0) return;
+        if (!pdf || !sections.showPage || !sections.page || !pageRef.current || width <= 0) return;
         let cancelled = false;
         let renderTask: ReturnType<Awaited<ReturnType<PDFDocumentProxy["getPage"]>>["render"]> | undefined;
         // Each render gets its own canvas, so quick page changes cannot clash.
@@ -138,18 +173,19 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
             cancelled = true;
             renderTask?.cancel();
         };
-    }, [pdf, page, width, zoom, name]);
+    }, [pdf, page, width, zoom, name, sections.page, sections.showPage]);
 
     useEffect(() => {
         if (!pdf) return;
         let cancelled = false;
-        void pdf.getPage(page).then((pdfPage) => pdfPage.getTextContent()).then((content) => {
-            if (!cancelled) setTextPage({ pdf, page, text: content.items.map((item) =>
-                "str" in item ? item.str + (item.hasEOL ? "\n" : " ") : "").join("") });
+        void pdf.getPage(page).then(pdfPage => readPdfText(pdfPage, content => {
+            if (!cancelled) setTextPage({ pdf, page, ...content });
+        })).then((content) => {
+            if (!cancelled) setTextPage({ pdf, page, ...content });
         }).catch((error) => {
             if (!cancelled) {
                 console.warn("Could not extract PDF page text:", error);
-                setTextPage({ pdf, page, text: "" });
+                setTextPage({ pdf, page, text: "", html: "" });
                 setRunning(false);
             }
         });
@@ -198,6 +234,8 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
             return;
         }
         setRunning(false);
+        setAutoPlayPage(null);
+        stopPlayerRef.current?.();
         setBusy(true);
         const previousTask = loadingRef.current;
         let nextDocument: PDFDocumentProxy | undefined;
@@ -213,7 +251,6 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
             setName(file.name);
             setPage(1);
             setPageInput("1");
-            setZoom(1);
             if (previousTask) void previousTask.destroy();
         } catch (err) {
             if (mounted.current) console.error("Could not open or save PDF:", err);
@@ -227,10 +264,32 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
         }
     }
 
+    async function continueSpeech(isCurrent: () => boolean): Promise<boolean> {
+        if (!pdf) return false;
+        // Skip blank/image-only pages without queuing empty speech utterances.
+        for (let next = page + 1; next <= pdf.numPages; next++) {
+            const nextPage = await pdf.getPage(next);
+            if (!mounted.current || !isCurrent()) return false;
+            const content = await readPdfText(nextPage);
+            if (!mounted.current || !isCurrent()) return false;
+            const { text } = content;
+            if (!/[\p{L}\p{N}]/u.test(text)) continue;
+            setWordIndex(0);
+            setTextPage({ pdf, page: next, ...content });
+            setAutoPlayPage(next);
+            setPage(next);
+            setPageInput(String(next));
+            return true;
+        }
+        return false;
+    }
+
     function goToPage(value: number) {
         if (!pdf || busy) return;
         const next = Number.isFinite(value) ? Math.min(pdf.numPages, Math.max(1, Math.trunc(value))) : page;
-        if (next === page) return;
+        if (next === page) { setPageInput(String(page)); return; }
+        setAutoPlayPage(playerState.current.playing ? next : null);
+        stopPlayerRef.current?.();
         setRunning(false);
         setWordIndex(0);
         setPage(next);
@@ -239,11 +298,88 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
 
     }
 
+    function toggleFullscreenControls() {
+        if (fullscreenControls) fullscreenWordRef.current?.focus();
+        setFullscreenControls(!fullscreenControls);
+    }
+
+    function renderRunnerControls() {
+        return (
+                    <div className="pdf-runner-controls" role="group" aria-label="Word runner controls">
+                        <button type="button" className="pdf-runner-icon-button" disabled={busy || !words.length || currentWord === 0}
+                            aria-label="Back 10 words" title="Back 10 words" onClick={() => {
+                                setRunning(false);
+                                setWordIndex(Math.max(0, currentWord - 10));
+                            }}><span className="material-icons" aria-hidden="true">replay_10</span></button>
+                        <button type="button" className={`pdf-runner-icon-button pdf-runner-play${running ? " pdf-runner-playing" : ""}`}
+                            disabled={busy || !words.length} aria-label={running ? "Pause word runner" : "Play word runner"}
+                            title={running ? "Pause" : "Play"} onClick={() => {
+                                stopPlayerRef.current?.();
+                                setRunning(!running);
+                                setRampWords(0);
+                            }}><span className="material-icons" aria-hidden="true">{running ? "pause" : "play_arrow"}</span></button>
+                        <button type="button" className="pdf-runner-icon-button pdf-runner-restart" disabled={busy || !words.length}
+                            aria-label="Restart page" title="Restart page" onClick={() => {
+                                setRunning(false);
+                                setWordIndex(0);
+                            }}>
+                            <span className="material-icons" aria-hidden="true">replay</span>
+                            <span className="material-icons pdf-runner-page-badge" aria-hidden="true">description</span>
+                        </button>
+                    </div>
+        );
+    }
+
+    function renderRunnerSliders() {
+        return <>
+                    <label className="pdf-runner-slider">Speed: {speed} words/min
+                        <input type="range" min="100" max="800" step="25" value={speed}
+                            disabled={busy} onChange={(event) => setSpeed(Number(event.target.value))} />
+                    </label>
+                    <p className="pdf-storage-note">{running ? `Reading at ${currentSpeed} words/min. ` : ""}
+                        Starts at 100 words/min and gradually builds to your chosen speed.</p>
+                    <label className="pdf-runner-slider">Word position
+                        <input type="range" min="0" max={Math.max(0, words.length - 1)} value={currentWord}
+                            disabled={busy || !words.length} onChange={(event) => {
+                                setRunning(false);
+                                setWordIndex(Number(event.target.value));
+                            }} />
+                    </label>
+        </>;
+    }
+
     return (
         <section className="pdf-reader" aria-label={name || "PDF reader"}>
             <div className="passage-header pdf-header">
                 <div className="pdf-title-row">
-                    <h2 className="reading-title-select">{name || "PDF reader"}</h2>
+                    <button type="button" className="reading-title-select pdf-title-button" disabled={busy}
+                        title={pdf ? `Replace ${name}` : "Choose a PDF"}
+                        aria-label={pdf ? `Replace PDF: ${name}` : "Choose a PDF"}
+                        onClick={() => fileInputRef.current?.click()}>{name || "Choose a PDF"}</button>
+                    <input ref={fileInputRef} type="file" accept="application/pdf,.pdf" hidden disabled={busy} onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = "";
+                        if (file) void chooseFile(file);
+                    }} />
+                    <button type="button" className="speech-icon-button speech-player-toggle" disabled={!pdf || busy}
+                        aria-label={runnerOpen ? "Close word runner" : "Open word runner"}
+                        title={runnerOpen ? "Close word runner" : "Open word runner"}
+                        aria-expanded={runnerOpen} aria-controls={runnerOpen ? `${id}-word-runner` : undefined}
+                        onClick={() => {
+                            stopPlayerRef.current?.();
+                            setSection("runner", !runnerOpen);
+                            setRunning(false);
+                        }}><span className="material-icons" aria-hidden="true">speed</span></button>
+                    <div className="integrated-player-trigger" ref={setPlayerTriggerContainer}>
+                        {(!pdf || busy || !textReady) && <button type="button" className="speech-icon-button" disabled aria-label="Read aloud unavailable while PDF loads">
+                            <span className="material-icons" aria-hidden="true">volume_up</span>
+                        </button>}
+                    </div>
+                    <button type="button" className="speech-icon-button" aria-label="PDF display settings" title="PDF display settings"
+                        aria-haspopup="dialog" aria-expanded={settingsOpen} aria-controls={`${id}-pdf-settings`}
+                        onClick={() => { settingsRef.current?.showModal(); setSettingsOpen(true); }}>
+                        <span className="material-icons" aria-hidden="true">settings</span>
+                    </button>
                     <Menu options={layoutOptions}><button className="dots-button" aria-label="PDF reader options">⋮</button></Menu>
                 </div>
                 {pdf && <div className="pdf-navigation">
@@ -260,73 +396,105 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
                         <span className="material-icons" aria-hidden="true">chevron_right</span>
                     </button>
                 </div>}
+                {pdf && !busy && textReady && <SpeechPassage key={`${pdf.fingerprints[0]}-${page}`} html={speechHtml}
+                    initialOpen={sections.speech} onPlayerStateChange={state => {
+                        playerState.current = state;
+                        setSection("speech", state.open);
+                    }}
+                    autoPlay={autoPlayPage === page} onComplete={continueSpeech}
+                    id={id} language="en" passageKey={`${pdf.fingerprints[0]}|${page}`} hideText mergeInlineText
+                    textContainer={pageText ? textContainer : null}
+                    playerTriggerContainer={playerTriggerContainer} stopPlayerRef={stopPlayerRef}
+                    onPlaybackStart={() => {
+                        setRunning(false);
+                        setSection("runner", false);
+                        if (sectionsRef.current.showText) setSection("text", true);
+                    }}
+                    onPlayerOpen={() => { setRunning(false); setSection("runner", false); }} />}
+                {pdf && !busy && !textReady && sections.speech && <div className="speech-mini-player" role="status">
+                    Loading read aloud…
+                </div>}
             </div>
-            <div className="pdf-file-controls">
-                <label className={"pdf-file-button" + (busy ? " pdf-control-disabled" : "")}>
-                    <span className="material-icons" aria-hidden="true">upload_file</span>
-                    <span>{pdf ? "Replace PDF" : "Choose a PDF"}</span>
-                    <input type="file" accept="application/pdf,.pdf" disabled={busy} onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        e.target.value = "";
-                        if (file) void chooseFile(file);
-                    }} />
-                </label>
-                {pdf && <label className="pdf-zoom">Zoom <select value={zoom} onChange={(e) => setZoom(Number(e.target.value))}>
-                    <option value="1">Fit width</option>
-                    <option value="1.5">150%</option>
-                    <option value="2">200%</option>
-                </select></label>}
-            </div>
-            {pdf && <div className="pdf-word-runner">
-                <button className="pdf-runner-toggle" aria-expanded={runnerOpen} onClick={() => {
-                    setRunnerOpen(!runnerOpen);
-                    setRunning(false);
-                }}>Word runner {runnerOpen ? "▴" : "▾"}</button>
-                {runnerOpen && <div className="pdf-runner-panel">
+            {pdf && runnerOpen && <div className="pdf-word-runner" id={`${id}-word-runner`}>
+                <div className="pdf-runner-panel">
+                    <div className="pdf-runner-panel-actions">
+                        <button type="button" className="pdf-runner-expand" aria-label="Expand word runner" title="Expand word runner"
+                            aria-haspopup="dialog" onClick={() => {
+                                setFullscreenControls(false);
+                                runnerDialogRef.current?.showModal();
+                            }}><span className="material-icons" aria-hidden="true">open_in_full</span></button>
+                    </div>
                     <div className="pdf-runner-word" aria-label="Current word">{textReady ? (words[currentWord] || "—") : "…"}</div>
                     <p className="pdf-storage-note">{!textReady ? "Loading words…" : words.length
                         ? `Page ${page} · Word ${currentWord + 1} of ${words.length}`
                         : "No selectable text on this page. Choose another page to continue."}</p>
-                    <div className="pdf-runner-controls">
-                        <button disabled={busy || !words.length} onClick={() => {
-                            setRunning(!running);
-                            setRampWords(0);
-                        }}>{running ? "Pause" : "Play"}</button>
-                        <button disabled={busy || !words.length || currentWord === 0} onClick={() => {
-                            setRunning(false);
-                            setWordIndex(Math.max(0, currentWord - 10));
-                        }}>Back 10 words</button>
-                        <button disabled={busy || !words.length} onClick={() => {
-                            setRunning(false);
-                            setWordIndex(0);
-                        }}>Restart page</button>
-                    </div>
-                    <label className="pdf-runner-slider">Speed: {speed} words/min
-                        <input type="range" min="100" max="800" step="25" value={speed}
-                            disabled={busy} onChange={(event) => setSpeed(Number(event.target.value))} />
-                    </label>
-                    <p className="pdf-storage-note">{running ? `Reading at ${currentSpeed} words/min. ` : ""}
-                        Starts at 100 words/min and gradually builds to your chosen speed.</p>
-                    <label className="pdf-runner-slider">Word position
-                        <input type="range" min="0" max={Math.max(0, words.length - 1)} value={currentWord}
-                            disabled={busy || !words.length} onChange={(event) => {
-                                setRunning(false);
-                                setWordIndex(Number(event.target.value));
-                            }} />
-                    </label>
+                    {renderRunnerControls()}
+                    {renderRunnerSliders()}
                     {textReady && words.length > 0 && currentWord === words.length - 1 && page === pdf.numPages && !running
                         && <p className="pdf-storage-note">End of book.</p>}
-                </div>}
+                </div>
             </div>}
+            {pdf && runnerOpen && createPortal(<dialog ref={runnerDialogRef}
+                className="pdf-word-runner pdf-runner-fullscreen" aria-label="Full-screen word runner"
+                onClose={() => setFullscreenControls(false)}>
+                <div className="pdf-runner-fullscreen-header" hidden={!fullscreenControls}>
+                    <button type="button" className="pdf-runner-icon-button" aria-label="Close full-screen word runner"
+                        title="Return to reader" onClick={() => runnerDialogRef.current?.close()}>
+                        <span className="material-icons" aria-hidden="true">close</span>
+                    </button>
+                </div>
+                <button ref={fullscreenWordRef} type="button" className="pdf-runner-fullscreen-word"
+                    aria-label={`${textReady ? (words[currentWord] || "No readable text") : "Loading words"}. ${fullscreenControls ? "Hide controls" : "Show controls"}`}
+                    onClick={toggleFullscreenControls}>{textReady ? (words[currentWord] || "—") : "…"}</button>
+                <div className="pdf-runner-fullscreen-controls" hidden={!fullscreenControls}>
+                    <p className="pdf-storage-note">{!textReady ? "Loading words…" : words.length
+                        ? `Page ${page} · Word ${currentWord + 1} of ${words.length}`
+                        : "No selectable text on this page. Choose another page to continue."}</p>
+                    {renderRunnerControls()}
+                    {renderRunnerSliders()}
+                </div>
+            </dialog>, document.body)}
             {!pdf && !busy && <p className="pdf-storage-note">Choose a book to start reading. Your file and page will be saved on this device.</p>}
             {error && <p className="passage-error" role="alert">{error}</p>}
-            {(busy || rendering) && <p role="status">{busy ? "Opening PDF…" : "Loading page…"}</p>}
-            <div className="pdf-viewport" ref={viewportRef} aria-busy={busy || rendering}>
-                <div ref={pageRef} />
-            </div>
-            {pdf && <details className="pdf-page-text"><summary>Page {page} text</summary>
-                <p>{pageText || "No text is available for this page. Scanned pages may contain only images."}</p>
+            {(busy || (sections.showPage && sections.page && rendering)) && <p role="status">{busy ? "Opening PDF…" : "Loading page…"}</p>}
+            <details className="pdf-page-view" hidden={!pdf || !sections.showPage} open={sections.page}
+                onToggle={event => setSection("page", event.currentTarget.open)}>
+                <summary>Page {page} view</summary>
+                <div className="pdf-viewport" ref={viewportRef} aria-busy={busy || rendering}>
+                    <div ref={pageRef} />
+                </div>
+            </details>
+            {pdf && <details className="pdf-page-text" hidden={!sections.showText} open={sections.text}
+                onToggle={event => setSection("text", event.currentTarget.open)}><summary>Page {page} text</summary>
+                <div ref={setTextContainer} />
+                {(!textReady || busy) ? <p>Loading page text…</p>
+                    : !pageText && <p>No text is available for this page. Scanned pages may contain only images.</p>}
             </details>}
+            {createPortal(<dialog ref={settingsRef} id={`${id}-pdf-settings`} className="passage-picker pdf-settings"
+                aria-labelledby={`${id}-pdf-settings-title`} onClose={() => setSettingsOpen(false)}
+                onClick={event => {
+                    event.stopPropagation();
+                    if (event.target !== event.currentTarget) return;
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) settingsRef.current?.close();
+                }}>
+                <div className="passage-picker-heading">
+                    <h2 id={`${id}-pdf-settings-title`}>PDF display settings</h2>
+                    <button type="button" className="passage-picker-close" aria-label="Close PDF display settings" onClick={() => settingsRef.current?.close()}>×</button>
+                </div>
+                <div className="passage-picker-panel pdf-settings-content">
+                    <fieldset>
+                        <legend>Show sections</legend>
+                        <label><input type="checkbox" checked={sections.showPage} onChange={event => setSection("showPage", event.target.checked)} /> Page view</label>
+                        <label><input type="checkbox" checked={sections.showText} onChange={event => setSection("showText", event.target.checked)} /> Extracted text</label>
+                    </fieldset>
+                    <label className="pdf-zoom">Page zoom <select value={zoom} onChange={event => setZoom(Number(event.target.value) as PdfSections["zoom"])}>
+                        <option value="1">Fit width</option>
+                        <option value="1.5">150%</option>
+                        <option value="2">200%</option>
+                    </select></label>
+                </div>
+            </dialog>, document.body)}
             {pdf && <p className="pdf-storage-note">Saved on this device. Deleting this reader removes its saved PDF.</p>}
         </section>
     );

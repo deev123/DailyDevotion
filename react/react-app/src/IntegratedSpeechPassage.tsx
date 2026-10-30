@@ -2,6 +2,7 @@ import type { MenuOption } from "./Menu.tsx" // import type important for import
 import Menu from "./Menu.tsx"
 import PassagePicker from "./PassagePicker.tsx"
 import ListPicker from "./ListPicker.tsx"
+import type { PlayerState } from "./SpeechPassage.tsx"
 import SpeechPassage from "./SpeechPassage.tsx"
 import { useState, useEffect, useRef } from "react"
 import GooeyCheckbox from "./GooeyCheckbox.tsx"
@@ -50,6 +51,13 @@ async function loadList(filePath: string) {
 function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
     const sectionRef = useRef<HTMLElement>(null);
     const headerRef = useRef<HTMLDivElement>(null);
+    const playerState = useRef<PlayerState>({ open: false, playing: false });
+    const [resumePlayer, setResumePlayer] = useState<PlayerState>({ open: false, playing: false });
+    function prepareChapterChange() {
+        setResumePlayer({ ...playerState.current });
+        stopPlayerRef.current?.();
+        setHtml("");
+    }
     const stopPlayerRef = useRef<(() => void) | null>(null);
     const [playerTriggerContainer, setPlayerTriggerContainer] = useState<HTMLDivElement | null>(null);
 
@@ -105,7 +113,7 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
     }
 
     function next() {
-        if (listElements.length > 1) stopPlayerRef.current?.();
+        if (listElements.length > 1) prepareChapterChange();
         setIndex((prev) => {
             let result = prev;
             if(prev < listElements.length - 1){
@@ -225,7 +233,7 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
     }, [index, listElements, versionId]);
 
     function onVersionChange(val: number) {
-        if (val !== versionId) stopPlayerRef.current?.();
+        if (val !== versionId) prepareChapterChange();
         setVersionId(val);
         saveVersion(val);
     }
@@ -240,7 +248,7 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
                 references={listElements}
                 value={index}
                 onChange={(nextIndex) => {
-                    if (nextIndex !== index) stopPlayerRef.current?.();
+                    if (nextIndex !== index) prepareChapterChange();
                     setIndex(nextIndex);
                     saveIndex(nextIndex);
                 }}
@@ -275,6 +283,8 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
         <div className="passage-body">
             {error ? <p className="passage-error">{error}</p>
              : html ? <SpeechPassage key={`${index}-${versionId}`} html={html} id={id} passageKey={`${reference}|${versionId}`} passageIndex={index} playerTriggerContainer={playerTriggerContainer} stopPlayerRef={stopPlayerRef}
+                 initialOpen={resumePlayer.open} autoPlay={resumePlayer.playing}
+                 onPlayerStateChange={state => { playerState.current = state; }}
                  language={versions.find(version => version.id === versionId)?.languageTag || "en"} /> : <p>...</p>}
         </div>
         {copyright &&
