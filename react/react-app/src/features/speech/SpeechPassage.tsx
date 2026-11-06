@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useMemo, useRef, useState, type RefObject } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import ListPicker from "../../components/ListPicker.tsx";
 import { segmentInlineText } from "./speechText.ts";
@@ -124,10 +124,16 @@ export default function SpeechPassage({ defaultFollow = false, autoPlayGeneratio
     const watchdogRef = useRef<number | null>(null);
     const nextSpeechRef = useRef<number | null>(null);
     const rateChangeRef = useRef<number | null>(null);
+    const repeatTimerRef = useRef<number | null>(null);
+    const repeatedRef = useRef(false);
     const stopRef = useRef<(() => void) | null>(null);
     const positionRef = useRef(initialPosition);
     const autoPlayConsumed = useRef(false);
     const mountGeneration = useRef(playbackGeneration);
+
+    useEffect(() => () => {
+        if (repeatTimerRef.current !== null) window.clearTimeout(repeatTimerRef.current);
+    }, []);
 
     useEffect(() => {
         onPlayerStateChange?.({ open: playerOpen, playing: status === "playing", generation: status === "playing" ? playerGeneration : undefined });
@@ -388,6 +394,43 @@ export default function SpeechPassage({ defaultFollow = false, autoPlayGeneratio
         savePreference("_speechFollow", String(value));
     }
 
+    function moveSentence(nextIndex: number) {
+        if (nextIndex < 0 || nextIndex >= sentences.length) return;
+        positionRef.current = nextIndex;
+        setSentenceIndex(nextIndex);
+        savePosition(nextIndex);
+        setWord(null);
+        if (status === "playing") play(nextIndex);
+        else setStatus("paused");
+    }
+
+    function stopRepeating() {
+        if (repeatTimerRef.current !== null) window.clearTimeout(repeatTimerRef.current);
+        repeatTimerRef.current = null;
+    }
+
+    function startRepeating(direction: number) {
+        stopRepeating();
+        repeatedRef.current = false;
+        const startedAt = performance.now();
+        const repeat = () => {
+            const next = positionRef.current + direction;
+            if (next < 0 || next >= sentences.length) { stopRepeating(); return; }
+            repeatedRef.current = true;
+            moveSentence(next);
+            // Start slowly for small adjustments, then accelerate during a hold.
+            const heldMs = performance.now() - startedAt;
+            const delay = Math.max(60, 250 - Math.max(0, heldMs - 450) * 0.08);
+            repeatTimerRef.current = window.setTimeout(repeat, delay);
+        };
+        repeatTimerRef.current = window.setTimeout(repeat, 450);
+    }
+
+    function sentenceClick(direction: number) {
+        if (repeatedRef.current) { repeatedRef.current = false; return; }
+        moveSentence(positionRef.current + direction);
+    }
+
     function changeRate(value: number) {
         // Browser speech rates cannot be changed on an utterance already in
         // progress. Restart at the last reported word, or at the segment if
@@ -430,30 +473,30 @@ export default function SpeechPassage({ defaultFollow = false, autoPlayGeneratio
                 }}>
                 <span className="material-icons" aria-hidden="true">{playerOpen ? "close" : "volume_up"}</span>
             </button>, playerTriggerContainer)}
-            {playerOpen && <div id={`${id}-read-aloud-player`} className="player-bar" role="group" aria-label="Read aloud player">
+            {playerOpen && <div id={`${id}-read-aloud-player`} className="player-bar speech-player-bar" role="group" aria-label="Read aloud player"
+                style={{ "--speech-progress": `${sentences.length ? (currentPosition + 1) / sentences.length * 100 : 0}%` } as CSSProperties}>
                 {!supported ? <p role="status">Text to speech is not available in this browser.</p> : <>
+                    <button type="button" className="player-icon-button" disabled={!sentences.length || currentPosition === 0}
+                        aria-label="Previous sentence" title="Previous sentence" onPointerDown={event => { if (event.button === 0) { event.currentTarget.setPointerCapture(event.pointerId); startRepeating(-1); } }}
+                        onPointerUp={stopRepeating} onPointerCancel={stopRepeating} onLostPointerCapture={stopRepeating} onClick={() => sentenceClick(-1)}>
+                        <span className="material-icons" aria-hidden="true">skip_previous</span>
+                    </button>
                     <button type="button" className={`player-icon-button${status === "playing" ? " player-playing" : ""}`} disabled={!sentences.length}
                         aria-label={status === "playing" ? "Stop reading" : "Play reading"}
                         title={status === "playing" ? "Stop reading" : "Play reading"}
                         onClick={() => status === "playing" ? pause() : play(positionRef.current)}>
                         <span className="material-icons" aria-hidden="true">{status === "playing" ? "pause" : "play_arrow"}</span>
                     </button>
-                    <label className="player-position">
-                        <span aria-hidden="true">{sentences.length ? currentPosition + 1 : 0} / {sentences.length}</span>
-                        <input type="range" min="0" max={Math.max(0, sentences.length - 1)} step="1"
-                            value={currentPosition} disabled={!sentences.length}
-                            aria-label="Reading position"
-                            aria-valuetext={sentences.length ? `Position ${currentPosition + 1} of ${sentences.length}` : "No readable text"}
-                            onChange={event => {
-                                const nextIndex = Number(event.target.value);
-                                positionRef.current = nextIndex;
-                                setSentenceIndex(nextIndex);
-                                savePosition(nextIndex);
-                                setWord(null);
-                                if (status === "playing") play(nextIndex);
-                                else setStatus("paused");
-                            }} />
-                    </label>
+                    <button type="button" className="player-icon-button" disabled={!sentences.length || currentPosition >= sentences.length - 1}
+                        aria-label="Next sentence" title="Next sentence" onPointerDown={event => { if (event.button === 0) { event.currentTarget.setPointerCapture(event.pointerId); startRepeating(1); } }}
+                        onPointerUp={stopRepeating} onPointerCancel={stopRepeating} onLostPointerCapture={stopRepeating} onClick={() => sentenceClick(1)}>
+                        <span className="material-icons" aria-hidden="true">skip_next</span>
+                    </button>
+                    <span className="speech-player-position" role="progressbar" aria-label="Reading progress" aria-valuemin={0}
+                        aria-valuemax={sentences.length} aria-valuenow={sentences.length ? currentPosition + 1 : 0}
+                        aria-valuetext={sentences.length ? `Sentence ${currentPosition + 1} of ${sentences.length}` : "No readable text"}>
+                        {sentences.length ? currentPosition + 1 : 0} / {sentences.length}
+                    </span>
                     <button type="button" className={`player-icon-button${follow ? " speech-follow-active" : ""}`}
                         aria-label="Follow highlighted text" aria-pressed={follow} title={`Follow highlighted text: ${follow ? "on" : "off"}`}
                         onClick={() => changeFollow(!follow)}>

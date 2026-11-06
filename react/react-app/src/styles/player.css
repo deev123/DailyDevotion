@@ -62,3 +62,15 @@
 .player-position span { flex-shrink: 0; white-space: nowrap; }
 .player-position input { display: block; flex: 1; width: 100%; min-width: 0; margin: 0; }
 .player-bar .passage-error { flex-basis: 100%; font-size: 0.875rem; }
+.speech-player-bar::after {
+  content: "";
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  bottom: -1px;
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--text) var(--speech-progress), transparent var(--speech-progress));
+  pointer-events: none;
+}
+.speech-player-position { flex: 1 1 auto; text-align: center; white-space: nowrap; font-size: 0.75rem; color: var(--text-muted); }
