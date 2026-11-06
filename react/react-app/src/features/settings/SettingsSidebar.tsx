@@ -84,6 +84,7 @@ function SettingsSidebar({ onOpenChange, onNavigate, components }: { onOpenChang
 
     // element ref so we can move focus into the dialog when it opens
     const sidebarRef = useRef<HTMLElement | null>(null);
+    const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
 
     // apply both CSS variables and persist to local storage
     function applyTheme(bg: string, txt: string) {
@@ -217,6 +218,23 @@ function SettingsSidebar({ onOpenChange, onNavigate, components }: { onOpenChang
                     tabIndex={-1}
                     ref={sidebarRef}
                     onClick={(e) => e.stopPropagation()}
+                    onTouchStart={event => {
+                        const target = event.target as Element;
+                        if (event.touches.length !== 1 || target.closest("input, select, textarea, [role='slider']")) {
+                            swipeStartRef.current = null;
+                            return;
+                        }
+                        swipeStartRef.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+                    }}
+                    onTouchCancel={() => { swipeStartRef.current = null; }}
+                    onTouchEnd={event => {
+                        const start = swipeStartRef.current;
+                        swipeStartRef.current = null;
+                        if (!start || event.touches.length || event.changedTouches.length !== 1) return;
+                        const dx = event.changedTouches[0].clientX - start.x;
+                        const dy = event.changedTouches[0].clientY - start.y;
+                        if (dx >= 70 && dx > Math.abs(dy) * 1.5) closeSidebar();
+                    }}
                 >
                     <div className="settings-sidebar-header">
                         <span>Menu</span>
@@ -285,31 +303,43 @@ function SettingsSidebar({ onOpenChange, onNavigate, components }: { onOpenChang
                         Some fonts may not be installed on your device. If unavailable, a similar font will be used.
                     </p>
 
-                    <label className="settings-row settings-slider-row">
-                        <span>Font size: {fontSize}%</span>
-                        <input
-                            type="range"
-                            min="75"
-                            max="150"
-                            step="5"
-                            value={fontSize}
-                            aria-valuetext={`${fontSize}%`}
-                            onChange={(e) => applyFontSize(Number(e.target.value))}
-                        />
-                    </label>
+                    <div className="settings-row">
+                        <span>Font size</span>
+                        <div className="settings-stepper" role="group" aria-label="Font size">
+                            <button type="button" aria-label="Decrease font size" disabled={fontSize <= 75} onClick={() => applyFontSize(Math.max(75, fontSize - 5))}>−</button>
+                            <label className="settings-stepper-value">
+                                <input key={fontSize} type="text" inputMode="decimal" aria-label="Font size in percent" defaultValue={fontSize}
+                                    onKeyDown={event => { if (event.key === "Enter") event.currentTarget.blur(); }}
+                                    onBlur={event => {
+                                        const value = Number(event.currentTarget.value);
+                                        const next = event.currentTarget.value.trim() && Number.isFinite(value) ? Math.min(150, Math.max(75, value)) : fontSize;
+                                        event.currentTarget.value = String(next);
+                                        applyFontSize(next);
+                                    }} />
+                                <span aria-hidden="true">%</span>
+                            </label>
+                            <button type="button" aria-label="Increase font size" disabled={fontSize >= 150} onClick={() => applyFontSize(Math.min(150, fontSize + 5))}>+</button>
+                        </div>
+                    </div>
 
-                    <label className="settings-row settings-slider-row">
-                        <span>Letter spacing: {letterSpacing.toFixed(2)} em</span>
-                        <input
-                            type="range"
-                            min="-0.15"
-                            max="0.2"
-                            step="0.01"
-                            value={letterSpacing}
-                            aria-valuetext={`${letterSpacing.toFixed(2)} em`}
-                            onChange={(e) => applyLetterSpacing(Number(e.target.value))}
-                        />
-                    </label>
+                    <div className="settings-row">
+                        <span>Letter spacing</span>
+                        <div className="settings-stepper" role="group" aria-label="Letter spacing">
+                            <button type="button" aria-label="Decrease letter spacing" disabled={letterSpacing <= -0.15} onClick={() => applyLetterSpacing(Math.max(-0.15, Number((letterSpacing - 0.01).toFixed(2))))}>−</button>
+                            <label className="settings-stepper-value">
+                                <input key={letterSpacing} type="text" inputMode="decimal" aria-label="Letter spacing in em" defaultValue={letterSpacing.toFixed(2)}
+                                    onKeyDown={event => { if (event.key === "Enter") event.currentTarget.blur(); }}
+                                    onBlur={event => {
+                                        const value = Number(event.currentTarget.value);
+                                        const next = event.currentTarget.value.trim() && Number.isFinite(value) ? Math.min(0.2, Math.max(-0.15, Number(value.toFixed(2)))) : letterSpacing;
+                                        event.currentTarget.value = next.toFixed(2);
+                                        applyLetterSpacing(next);
+                                    }} />
+                                <span aria-hidden="true">em</span>
+                            </label>
+                            <button type="button" aria-label="Increase letter spacing" disabled={letterSpacing >= 0.2} onClick={() => applyLetterSpacing(Math.min(0.2, Number((letterSpacing + 0.01).toFixed(2))))}>+</button>
+                        </div>
+                    </div>
                     <DeleteData />
                 </aside>
             </div>, document.body

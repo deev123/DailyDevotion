@@ -87,18 +87,21 @@
   font-size: 0.8rem;
 }
 
-.settings-slider-row
-{
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
+.settings-stepper { display: flex; align-items: center; gap: 6px; }
+.settings-stepper-value { display: flex; align-items: center; gap: 2px; font-size: 0.85rem; }
+.settings-stepper-value input { width: 3.5em; min-width: 0; padding: 6px 2px; border: 1px solid var(--border-subtle); border-radius: 4px; background: var(--background); color: var(--text); text-align: center; font: inherit; }
+.settings-stepper button {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--background);
+  color: var(--text);
+  font-size: 1.2rem;
+  cursor: pointer;
 }
-
-.settings-slider-row input[type="range"]
-{
-  width: 100%;
-  margin: 0;
-}
+.settings-stepper button:disabled { opacity: 0.5; cursor: default; }
+.settings-stepper button:not(:disabled):hover { background: var(--accent1); }
 
 .settings-font-select
 {
