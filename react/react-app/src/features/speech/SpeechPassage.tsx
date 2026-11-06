@@ -525,7 +525,7 @@ export default function SpeechPassage({ defaultFollow = false, autoPlayGeneratio
                 </div>
                 <div className="dialog-panel speech-settings-content">
                     <span>Voice</span>
-                    <ListPicker title="Select voice" className="compact-select" closeOnSelect={false} options={voices.map((item, index) => ({
+                    <ListPicker title="Select voice" className="compact-select" closeOnSelect={false} searchable options={voices.map((item, index) => ({
                         value: index, label: `${item.name} — ${item.lang}${item.localService ? " · Local" : " · Online"}`,
                     }))} value={voice ? voices.indexOf(voice) : null} disabled={!voices.length}
                         onChange={index => {

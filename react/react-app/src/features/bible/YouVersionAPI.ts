@@ -6,7 +6,10 @@ type BibleVersion = {
     abbreviation: string,
     title: string,
     languageTag: string,
-    languageName: string
+    languageName: string,
+    languageGroup: string,
+    languageSearch: string,
+    books: string[] | null
 }
 
 type BibleVersionDetail = {
@@ -24,16 +27,6 @@ class YouVersionAPI {
     static APP_KEY = import.meta.env.VITE_YOUVERSION_APP_KEY ?? "";
 
     static BASE_URL = "https://api.youversion.com/v1";
-
-    // language ranges to include in the version dropdown (english + spanish + italian)
-    static LANGUAGE_RANGES = ["en", "es", "it"];
-
-    // native display names for the languages in LANGUAGE_RANGES, used as optgroup labels
-    static LANGUAGE_NAMES: Record<string, string> = {
-        "en": "English",
-        "es": "Español",
-        "it": "Italiano"
-    };
 
     // cache for the version list so it is only fetched once per session
     static versionsCache: BibleVersion[] | null = null;
@@ -125,17 +118,20 @@ class YouVersionAPI {
         return `${bookCode}.${chapter}`;
     }
 
-    // list of bible versions available to this app key across the configured languages.
-    // the collection endpoint only returns versions from the FIRST language range that
-    // has bibles, so we query each language separately and merge the results.
+    // The wildcard returns the Bibles available to this app across languages.
     static async fetchVersions(): Promise<BibleVersion[]> {
         if (this.versionsCache) return this.versionsCache;
 
         try {
             const byId = new Map<number, BibleVersion>();
+            // Language metadata supplies endonyms even where the browser's locale data does not.
+            const namesPromise = fetch(`${this.BASE_URL}/languages?bibles_available=true&page_size=*&fields[]=id&fields[]=display_names`, {
+                headers: { "Accept": "application/json", "X-YVP-App-Key": this.APP_KEY }
+            }).then(async response => response.ok && response.status !== 204 ? (await response.json()).data : []).catch(() => []);
 
-            for (const lang of this.LANGUAGE_RANGES) {
-                const url = `${this.BASE_URL}/bibles?language_ranges[]=${encodeURIComponent(lang)}&page_size=99`;
+            let pageToken = "";
+            do {
+                const url = `${this.BASE_URL}/bibles?language_ranges[]=*&page_size=99${pageToken ? `&page_token=${encodeURIComponent(pageToken)}` : ""}`;
                 const response = await fetch(url, {
                     headers: {
                         "Accept": "application/json",
@@ -143,22 +139,45 @@ class YouVersionAPI {
                     }
                 });
                 if (!response.ok) {
-                    console.error(`Failed to fetch versions for ${lang} (${response.status})`);
-                    continue;
+                    throw new Error(`Failed to fetch versions (${response.status})`);
                 }
+                if (response.status === 204) break;
 
                 const data = await response.json();
 
                 for (const v of data.data as any[]) {
                     const languageTag = v.language_tag ?? v.language?.iso_639_1 ?? "";
+                    const parts = languageTag.split("-");
+                    const baseLanguage = parts[0].toLowerCase();
+                    const script = parts.find((part: string) => /^[a-z]{4}$/i.test(part));
+                    const languageGroup = baseLanguage + (script ? `-${script}` : "");
                     byId.set(v.id, {
                         id: v.id,
                         abbreviation: v.abbreviation,
                         title: v.localized_title ?? v.title,
                         languageTag,
-                        languageName: this.LANGUAGE_NAMES[languageTag] ?? languageTag
+                        languageName: languageGroup || "Other",
+                        languageGroup: languageGroup || "und",
+                        languageSearch: languageTag,
+                        books: Array.isArray(v.books) ? v.books.filter((book: unknown): book is string => typeof book === "string") : null
                     });
                 }
+                pageToken = data.next_page_token || "";
+            } while (pageToken);
+
+            const languageData: { id: string; display_names?: Record<string, string> }[] = await namesPromise;
+            const names = new Map(languageData.map(item => [item.id.toLowerCase(), item.display_names ?? {}]));
+            for (const version of byId.values()) {
+                const base = version.languageGroup.split("-")[0];
+                const displayNames = names.get(version.languageGroup.toLowerCase()) ?? names.get(base) ?? {};
+                let native: string | undefined = displayNames[version.languageGroup] ?? displayNames[base];
+                let english = displayNames.en ?? "";
+                try {
+                    native ||= new Intl.DisplayNames([version.languageGroup], { type: "language" }).of(version.languageGroup);
+                    english ||= new Intl.DisplayNames(["en"], { type: "language" }).of(version.languageGroup) ?? "";
+                } catch { /* Use the code if no name is available. */ }
+                version.languageName = native || english || version.languageGroup;
+                version.languageSearch = `${version.languageTag} ${english}`;
             }
 
             // group by language so optgroups stay together, then sort within each language
@@ -247,6 +266,7 @@ class YouVersionAPI {
                     "X-YVP-App-Key": this.APP_KEY
                 }
             });
+            if (response.status === 404) return { ok: false, html: "", unavailable: true, error: "This passage is not available in the selected translation. Try another passage or translation." };
             if (!response.ok) throw new Error(`Failed to fetch passage (${response.status})`);
 
             // 204 means the passage has no content available for this version

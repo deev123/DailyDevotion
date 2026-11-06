@@ -81,10 +81,11 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
     let [listElements, setListElements] = useState<string[]>([]);
     let [html, setHtml] = useState("");
     let [error, setError] = useState("");
+    const [unavailablePassages, setUnavailablePassages] = useState<Set<string>>(() => new Set());
     let [checkboxChecked, setCheckboxChecked] = useState(false);
 
     // bible version selection
-    let [versions, setVersions] = useState<{id: number, abbreviation: string, title: string, languageTag: string, languageName: string}[]>([]);
+    let [versions, setVersions] = useState<{id: number, abbreviation: string, title: string, languageTag: string, languageName: string, languageGroup: string, languageSearch: string, books: string[] | null}[]>([]);
     let [versionId, setVersionId] = useState<number | null>(null);
     // copyright notice for the selected version
     let [copyright, setCopyright] = useState("");
@@ -174,6 +175,7 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
             const savedVersion = localStorage.getItem(id + "_version");
             let stored = 0;
             try { stored = Number.parseInt(JSON.parse(savedVersion ?? "null")); } catch { /* Use the normal fallback. */ }
+            const defaultVersion = Number(localStorage.getItem("defaultBibleVersion"));
             const available = await YouVersionAPI.fetchVersions();
             setVersions(available);
 
@@ -188,7 +190,7 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
                     v.abbreviation.toUpperCase() === "BSB" ||
                     v.title.toLowerCase() === "berean standard bible"
                 );
-                const fallback = savedVersion === null ? berean ?? available[0] : available[0];
+                const fallback = (savedVersion === null ? available.find(v => v.id === defaultVersion) ?? berean : undefined) ?? available.find(v => v.languageTag === "en") ?? available[0];
                 setVersionId(fallback.id);
                 saveVersion(fallback.id);
             }
@@ -232,20 +234,28 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
                 return;
             }
 
+            const selectedBooks = versions.find(version => version.id === versionId)?.books;
+            if (selectedBooks && !selectedBooks.includes(usfm.split(".")[0])) {
+                setError("This book is not available in the selected translation. Try another passage or translation.");
+                return;
+            }
+
             setError("");
             const result = await YouVersionAPI.fetchChapterHtml(versionId, usfm);
             if (cancelled) return;
+            if (result.unavailable) setUnavailablePassages(previous => new Set(previous).add(`${versionId}:${usfm}`));
             setHtml(result.html);
             setError(result.error);
         }
         loadChapter();
         return () => { cancelled = true; };
-    }, [index, listElements, versionId]);
+    }, [index, listElements, versionId, versions]);
 
     function onVersionChange(val: number) {
         if (val !== versionId) prepareChapterChange();
         setVersionId(val);
         saveVersion(val);
+        localStorage.setItem("defaultBibleVersion", String(val));
     }
 
     const reference = listElements[index];
@@ -267,12 +277,15 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
             {versions.length > 0 &&
                 <ListPicker
                     title="Select translation"
+                    groupTabs
                     className="integrated-translation-button"
                     triggerLabel={versions.find(version => version.id === versionId)?.abbreviation || "…"}
                     options={versions.map(version => ({
                         value: version.id,
-                        label: `${version.abbreviation} — ${version.title}`,
+                        label: `${version.abbreviation} — ${version.title}${version.books && reference && YouVersionAPI.referenceToUsfm(reference) && !version.books.includes(YouVersionAPI.referenceToUsfm(reference)!.split(".")[0]) ? " (book unavailable)" : reference && unavailablePassages.has(`${version.id}:${YouVersionAPI.referenceToUsfm(reference)}`) ? " (passage unavailable)" : ""}`,
                         group: version.languageName,
+                        groupKey: version.languageGroup,
+                        groupSearch: version.languageSearch,
                     }))}
                     value={versionId}
                     onChange={onVersionChange}
