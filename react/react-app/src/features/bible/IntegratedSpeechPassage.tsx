@@ -51,6 +51,7 @@ async function loadList(filePath: string) {
 function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
     const sectionRef = useRef<HTMLElement>(null);
     const headerRef = useRef<HTMLDivElement>(null);
+    const scrollPositionRef = useRef<{ index: number; offset: number } | null>(null);
     const playerState = useRef<PlayerState>({ open: false, playing: false });
     const [resumePlayer, setResumePlayer] = useState<PlayerState & { generation?: number }>({ open: false, playing: false });
     function prepareChapterChange() {
@@ -114,19 +115,28 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
     }
 
     function next() {
-        if (listElements.length > 1) prepareChapterChange();
-        setIndex((prev) => {
-            let result = prev;
-            if(prev < listElements.length - 1){
-                result ++;
-            }
-            else{
-                result = 0;
-            }
-            saveIndex(result);
-            return result;
-        });
+        if (listElements.length <= 1) return;
+        const nextIndex = index < listElements.length - 1 ? index + 1 : 0;
+        const item = sectionRef.current?.closest(".layout-section");
+        scrollPositionRef.current = item ? { index: nextIndex, offset: item.getBoundingClientRect().bottom } : null;
+        setError("");
+        prepareChapterChange();
+        saveIndex(nextIndex);
+        setIndex(nextIndex);
     }
+
+    useEffect(() => {
+        if (scrollPositionRef.current?.index !== index || (!html && !error)) return;
+        const frame = requestAnimationFrame(() => {
+            const saved = scrollPositionRef.current;
+            const item = sectionRef.current?.closest(".layout-section");
+            if (saved?.index !== index || !item) return;
+            scrollPositionRef.current = null;
+            const delta = item.getBoundingClientRect().bottom - saved.offset;
+            window.scrollBy({ top: delta, behavior: "instant" });
+        });
+        return () => cancelAnimationFrame(frame);
+    }, [index, html, error]);
 
     async function continueToNextChapter(isCurrent: () => boolean, generation: number): Promise<boolean> {
         const nextIndex = index + 1;
@@ -268,7 +278,7 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
                 references={listElements}
                 value={index}
                 onChange={(nextIndex) => {
-                    if (nextIndex !== index) prepareChapterChange();
+                    if (nextIndex !== index) { scrollPositionRef.current = null; prepareChapterChange(); }
                     setIndex(nextIndex);
                     saveIndex(nextIndex);
                 }}
