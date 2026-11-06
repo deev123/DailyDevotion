@@ -426,8 +426,9 @@ export default function SpeechPassage({ defaultFollow = false, autoPlayGeneratio
         repeatTimerRef.current = window.setTimeout(repeat, 450);
     }
 
-    function sentenceClick(direction: number) {
-        if (repeatedRef.current) { repeatedRef.current = false; return; }
+    function sentenceClick(direction: number, keyboard: boolean) {
+        if (repeatedRef.current && !keyboard) { repeatedRef.current = false; return; }
+        repeatedRef.current = false;
         moveSentence(positionRef.current + direction);
     }
 
@@ -480,7 +481,7 @@ export default function SpeechPassage({ defaultFollow = false, autoPlayGeneratio
                 {!supported ? <p role="status">Text to speech is not available in this browser.</p> : <>
                     <button type="button" className="player-icon-button" disabled={!sentences.length || currentPosition === 0}
                         aria-label="Previous sentence" title="Previous sentence" onPointerDown={event => { if (event.button === 0) { event.currentTarget.setPointerCapture(event.pointerId); startRepeating(-1); } }}
-                        onPointerUp={stopRepeating} onPointerCancel={stopRepeating} onLostPointerCapture={stopRepeating} onClick={() => sentenceClick(-1)}>
+                        onPointerUp={stopRepeating} onPointerCancel={() => { stopRepeating(); repeatedRef.current = false; }} onLostPointerCapture={stopRepeating} onClick={event => sentenceClick(-1, event.detail === 0)}>
                         <span className="material-icons" aria-hidden="true">skip_previous</span>
                     </button>
                     <button type="button" className={`player-icon-button${status === "playing" ? " player-playing" : ""}`} disabled={!sentences.length}
@@ -491,7 +492,7 @@ export default function SpeechPassage({ defaultFollow = false, autoPlayGeneratio
                     </button>
                     <button type="button" className="player-icon-button" disabled={!sentences.length || currentPosition >= sentences.length - 1}
                         aria-label="Next sentence" title="Next sentence" onPointerDown={event => { if (event.button === 0) { event.currentTarget.setPointerCapture(event.pointerId); startRepeating(1); } }}
-                        onPointerUp={stopRepeating} onPointerCancel={stopRepeating} onLostPointerCapture={stopRepeating} onClick={() => sentenceClick(1)}>
+                        onPointerUp={stopRepeating} onPointerCancel={() => { stopRepeating(); repeatedRef.current = false; }} onLostPointerCapture={stopRepeating} onClick={event => sentenceClick(1, event.detail === 0)}>
                         <span className="material-icons" aria-hidden="true">skip_next</span>
                     </button>
                     <span className="speech-player-position" role="progressbar" aria-label="Reading progress" aria-valuemin={0}

@@ -30,6 +30,7 @@ class YouVersionAPI {
 
     // cache for the version list so it is only fetched once per session
     static versionsCache: BibleVersion[] | null = null;
+    static versionsRequest: Promise<BibleVersion[]> | null = null;
 
     // cache of per-version detail (copyright) keyed by version id
     static versionDetailCache: Map<number, BibleVersionDetail> = new Map();
@@ -121,7 +122,13 @@ class YouVersionAPI {
     // The wildcard returns the Bibles available to this app across languages.
     static async fetchVersions(): Promise<BibleVersion[]> {
         if (this.versionsCache) return this.versionsCache;
+        if (this.versionsRequest) return this.versionsRequest;
+        this.versionsRequest = this.loadVersions();
+        try { return await this.versionsRequest; }
+        finally { this.versionsRequest = null; }
+    }
 
+    private static async loadVersions(): Promise<BibleVersion[]> {
         try {
             const byId = new Map<number, BibleVersion>();
             // Language metadata supplies endonyms even where the browser's locale data does not.
@@ -145,7 +152,7 @@ class YouVersionAPI {
 
                 const data = await response.json();
 
-                for (const v of data.data as any[]) {
+                for (const v of data.data as { id: number; abbreviation: string; localized_title?: string; title: string; language_tag?: string; language?: { iso_639_1?: string }; books?: unknown }[]) {
                     const languageTag = v.language_tag ?? v.language?.iso_639_1 ?? "";
                     const parts = languageTag.split("-");
                     const baseLanguage = parts[0].toLowerCase();
@@ -243,7 +250,7 @@ class YouVersionAPI {
             const data = await response.json();
 
             const bookMap = new Map<string, string>();
-            for (const book of data.data as any[]) {
+            for (const book of data.data as { id?: string; title?: string }[]) {
                 if (book.id && book.title) {
                     bookMap.set(book.id, book.title);
                 }
