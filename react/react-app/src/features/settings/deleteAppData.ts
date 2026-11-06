@@ -2,7 +2,7 @@ import { clearAllPdfData } from "../pdf/pdfStorage";
 
 const appKeys = [
     "componentsConfig", "streak", "themeBackground", "themeText", "themePreset",
-    "themeCustomBackground", "themeCustomText", "themeFont", "themeFontSize", "themeLetterSpacing",
+    "themeCustomBackground", "themeCustomText", "themeFont", "themeFontSize", "themeLetterSpacing", "defaultSpeechVoice",
 ];
 const componentSuffixes = ["_index", "_version", "_title", "_text", "_state", "_voice", "_speechRate", "_speechPosition", "_speechFollow", "_speechContinue", "_videoPositions", "_pdfSections"];
 

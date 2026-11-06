@@ -104,7 +104,7 @@ export default function SpeechPassage({ defaultFollow = false, autoPlayGeneratio
     const continueChapterRef = useRef(continueChapter);
     const textRef = useRef<HTMLDivElement>(null);
     const [voices, setVoices] = useState<SpeechSynthesisVoice[]>(() => supported ? window.speechSynthesis.getVoices() : []);
-    const [selectedVoice, setSelectedVoice] = useState(() => readPreference(id + "_voice", ""));
+    const [selectedVoice, setSelectedVoice] = useState(() => readPreference(id + "_voice", readPreference("defaultSpeechVoice", "")));
     const [rate, setRate] = useState(() => {
         const saved = Number(readPreference(id + "_speechRate", "1"));
         return Number.isFinite(saved) ? Math.max(0.5, Math.min(2, saved)) : 1;
@@ -451,6 +451,8 @@ export default function SpeechPassage({ defaultFollow = false, autoPlayGeneratio
 
     function changeVoice(nextVoice: SpeechSynthesisVoice) {
         const key = voiceKey(nextVoice);
+        try { localStorage.setItem("defaultSpeechVoice", key); }
+        catch { setError("Your voice settings could not be saved on this device."); }
         if (voice && voiceKey(voice) === key) {
             if (status !== "playing") play(positionRef.current, rate, 0, nextVoice);
             return;
