@@ -108,6 +108,9 @@ function Layout(){
                 case "videoPlaylist":
                     localStorage.removeItem(id + "_index");
                     localStorage.removeItem(id + "_videoPositions");
+                    localStorage.removeItem(id + "_videoPlaylist");
+                    localStorage.removeItem(id + "_customVideos");
+                    localStorage.removeItem(id + "_customVideoIndex");
                     break;
                 case "pdfReader":
                     localStorage.removeItem(id + "_pdfSections");
