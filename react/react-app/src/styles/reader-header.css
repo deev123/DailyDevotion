@@ -1,0 +1,89 @@
+.passage-footer button:hover
+{
+  background-color: var(--surface-hover);
+}
+
+.dots-button
+{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 28px;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: none;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.dots-button:hover
+{
+  /* transform: scale(1.05) translate(0px, -5px); */
+  color: var(--text);
+}
+
+.passage-header,
+.notes-header
+{
+  position: sticky;
+  top: var(--header-offset);
+  z-index: 10;
+  background: var(--background);
+  padding-top: 4px;
+  padding-bottom: 4px;
+  gap: 8px;
+  border-bottom: 1px solid var(--accent1);
+}
+
+@media (prefers-reduced-motion: reduce)
+{
+  :root { transition: none; }
+}
+
+.passage-header
+{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Keep the reference visible while the three compact actions stay on one row. */
+.integrated-passage-header { gap: 2px; }
+.integrated-passage-header .title-select {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+}
+.integrated-passage-header .picker-trigger > span:first-child {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.integrated-passage-header .integrated-translation-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 1 auto;
+  min-width: 40px;
+  max-width: 64px;
+  min-height: 40px;
+  padding: 4px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--background);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+}
+.integrated-passage-header .integrated-translation-button:hover { background: var(--accent1); color: var(--text); }
+.integrated-passage-header .dots-button { width: 40px; }
+.integrated-player-trigger { flex: 0 0 40px; width: 40px; }
+

@@ -1,0 +1,43 @@
+/* Shared slider treatment for settings, read aloud, and the PDF reader. */
+input[type="range"] {
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  min-width: 0;
+  height: 36px;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 6px;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  background: var(--outline);
+  border-radius: 999px;
+}
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  background: var(--outline);
+  border-radius: 999px;
+}
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  border: 2px solid var(--background);
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 0 0 1px var(--outline);
+}
+input[type="range"]::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--background);
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 0 0 1px var(--outline);
+}
+input[type="range"]:disabled { opacity: 0.5; cursor: default; }

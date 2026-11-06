@@ -213,7 +213,7 @@ function Catechism({ layoutOptions, id, list }: CatechismProps){
                 </>
             : <p>...</p>}
         </div>
-        {createPortal(<dialog ref={dialogRef} className="passage-picker catechism-dialog" aria-labelledby={`${id}-reference-title`}
+        {createPortal(<dialog ref={dialogRef} className="dialog catechism-dialog" aria-labelledby={`${id}-reference-title`}
             onClose={() => setSelectedReference(null)}>
             <div className="catechism-dialog-header">
                 <h2 id={`${id}-reference-title`}>{selectedReference?.label}</h2>

@@ -1,0 +1,26 @@
+.passage-picker-books { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
+.passage-picker-books button { text-align: left; overflow-wrap: anywhere; }
+.passage-picker-book-name { margin: 0 4px 12px; font-size: 0.9rem; font-weight: 600; }
+.passage-picker-chapters { display: grid; grid-template-columns: repeat(auto-fit, minmax(48px, 1fr)); gap: 6px; }
+.passage-picker-chapters button { border-color: var(--border-subtle); }
+
+.list-picker .dialog-heading { border-bottom: 1px solid var(--border-subtle); }
+.list-picker-options { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
+.list-picker-options button,
+.list-picker-group-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.list-picker-options button > span:first-child,
+.list-picker-group-toggle > span:first-child { min-width: 0; }
+.list-picker .material-icons { flex-shrink: 0; font-size: 20px; }
+.list-picker-group + .list-picker-group { border-top: 1px solid var(--border-subtle); margin-top: 4px; padding-top: 4px; }
+.list-picker .list-picker-group-toggle { font-weight: 600; }
+.list-picker-group .list-picker-options { padding: 4px 0 8px 12px; }
+.compact-select.picker-trigger { box-sizing: border-box; min-height: 40px; }
+

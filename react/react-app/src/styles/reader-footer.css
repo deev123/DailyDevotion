@@ -1,0 +1,23 @@
+.verse-number,
+.passage-body .yv-vlbl
+{
+  font-size: 0.75em;
+  font-weight: 400;
+  color: color-mix(in srgb, var(--background), var(--text) 60%);
+}
+
+.verse-number
+{
+  margin-right: 5px;
+}
+
+.passage-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+
+

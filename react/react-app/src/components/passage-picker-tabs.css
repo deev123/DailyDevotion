@@ -1,0 +1,8 @@
+.passage-picker-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 12px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+.passage-picker-tabs button { flex: 1; font-weight: 600; }

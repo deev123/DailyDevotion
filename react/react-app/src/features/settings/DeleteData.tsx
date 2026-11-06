@@ -30,7 +30,7 @@ export default function DeleteData() {
             setError("");
             dialogRef.current?.showModal();
         }}>Reset app…</button>
-        {createPortal(<dialog ref={dialogRef} className="passage-picker delete-data-dialog"
+        {createPortal(<dialog ref={dialogRef} className="dialog delete-data-dialog"
             aria-labelledby={`${id}-title`} aria-describedby={`${id}-description`}
             onKeyDown={event => { if (event.key === "Escape") event.stopPropagation(); }}
             onCancel={event => { if (deleting) event.preventDefault(); }}
@@ -39,7 +39,7 @@ export default function DeleteData() {
                 <span className="material-icons" aria-hidden="true">warning</span>
                 <h2 id={`${id}-title`}>Reset app?</h2>
             </div>
-            <div className="passage-picker-panel delete-data-content">
+            <div className="dialog-panel delete-data-content">
                 <p id={`${id}-description`}><strong>This cannot be undone.</strong> The app will be reset to its defaults, and your streak and all saved data on this device will be lost.</p>
                 <p>This includes your reading progress, notes, saved PDFs, playlists, and settings. Close other open tabs of this app before deleting.</p>
                 <label htmlFor={`${id}-confirm`}>Type <strong>RESET</strong> to confirm</label>

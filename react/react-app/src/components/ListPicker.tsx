@@ -16,7 +16,7 @@ type Props = {
 };
 
 /** A flat list, or language-style accordion groups, with selection owned by the caller. */
-export default function ListPicker({ title, options, value, onChange, className = "reading-title-select", disabled = false, describedBy, triggerIcon, triggerLabel, closeOnSelect = true }: Props) {
+export default function ListPicker({ title, options, value, onChange, className = "title-select", disabled = false, describedBy, triggerIcon, triggerLabel, closeOnSelect = true }: Props) {
     const id = useId();
     const dialogRef = useRef<HTMLDialogElement>(null);
     const [open, setOpen] = useState(false);
@@ -54,7 +54,7 @@ export default function ListPicker({ title, options, value, onChange, className 
     }
 
     return <>
-        <button type="button" className={`${className} passage-picker-trigger`}
+        <button type="button" className={`${className} picker-trigger`}
             disabled={disabled || !options.length} aria-haspopup="dialog" aria-expanded={open}
             aria-controls={`${id}-dialog`} aria-describedby={describedBy} aria-label={`${title}: ${selected?.label ?? "None selected"}`} onClick={show}>
             {triggerLabel !== undefined ? <span>{triggerLabel}</span> : triggerIcon ? <span className="material-icons" aria-hidden="true">{triggerIcon}</span> : <>
@@ -62,7 +62,7 @@ export default function ListPicker({ title, options, value, onChange, className 
                 <span className="material-icons" aria-hidden="true">expand_more</span>
             </>}
         </button>
-        {createPortal(<dialog ref={dialogRef} id={`${id}-dialog`} className="passage-picker list-picker"
+        {createPortal(<dialog ref={dialogRef} id={`${id}-dialog`} className="dialog list-picker"
             aria-labelledby={`${id}-title`} onClose={() => setOpen(false)}
             onKeyDown={event => { if (event.key === "Escape") event.stopPropagation(); }}
             onClick={event => {
@@ -72,11 +72,11 @@ export default function ListPicker({ title, options, value, onChange, className 
                 const rect = event.currentTarget.getBoundingClientRect();
                 if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close();
             }}>
-            <div className="passage-picker-heading">
+            <div className="dialog-heading">
                 <h2 id={`${id}-title`}>{title}</h2>
-                <button type="button" className="passage-picker-close" aria-label={`Close ${title.toLowerCase()}`} onClick={close}>×</button>
+                <button type="button" className="dialog-close" aria-label={`Close ${title.toLowerCase()}`} onClick={close}>×</button>
             </div>
-            <div className="passage-picker-panel">
+            <div className="dialog-panel">
                 {grouped ? [...groups].map(([group, entries], index) => <div className="list-picker-group" key={group}>
                     <button type="button" className="list-picker-group-toggle"
                         aria-expanded={expandedGroup === group} aria-controls={`${id}-group-${index}`}

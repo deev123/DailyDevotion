@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import ListPicker from "../../components/ListPicker.tsx";
 import { segmentInlineText } from "./speechText.ts";
 import { followSpeechHighlight } from "./speechFollow.ts";
+import { usePlaybackWakeLock } from "../usePlaybackWakeLock.ts";
 
 // Speech synthesis is shared by the whole browser tab. Only the current owner
 // may cancel it, so deleting an idle widget cannot stop a different reader.
@@ -110,6 +111,7 @@ export default function SpeechPassage({ defaultFollow = false, autoPlayGeneratio
     });
     const [playerGeneration, setPlayerGeneration] = useState(0);
     const [status, setStatus] = useState<"idle" | "playing" | "paused" | "ended">("idle");
+    usePlaybackWakeLock(status === "playing");
     const [initialPosition] = useState(() => readPosition(id, passageKey));
     const [sentenceIndex, setSentenceIndex] = useState(initialPosition);
     const [word, setWord] = useState<{ start: number; end: number } | null>(null);
@@ -418,8 +420,8 @@ export default function SpeechPassage({ defaultFollow = false, autoPlayGeneratio
     }
 
     return <div className="speech-passage">
-        <div className={`speech-disclosure${playerOpen || error ? " speech-disclosure-open" : ""}`}>
-            {playerTriggerContainer && createPortal(<button type="button" className="speech-icon-button speech-player-toggle" aria-label={playerOpen ? "Close read aloud player" : "Open read aloud player"}
+        <div className={`player-disclosure${playerOpen || error ? " player-disclosure-open" : ""}`}>
+            {playerTriggerContainer && createPortal(<button type="button" className="player-icon-button player-toggle" aria-label={playerOpen ? "Close read aloud player" : "Open read aloud player"}
                 title={playerOpen ? "Close read aloud player" : "Open read aloud player"}
                 aria-expanded={playerOpen} aria-controls={playerOpen ? `${id}-read-aloud-player` : undefined} onClick={() => {
                     if (playerOpen) pause();
@@ -428,15 +430,15 @@ export default function SpeechPassage({ defaultFollow = false, autoPlayGeneratio
                 }}>
                 <span className="material-icons" aria-hidden="true">{playerOpen ? "close" : "volume_up"}</span>
             </button>, playerTriggerContainer)}
-            {playerOpen && <div id={`${id}-read-aloud-player`} className="speech-mini-player" role="group" aria-label="Read aloud player">
+            {playerOpen && <div id={`${id}-read-aloud-player`} className="player-bar" role="group" aria-label="Read aloud player">
                 {!supported ? <p role="status">Text to speech is not available in this browser.</p> : <>
-                    <button type="button" className={`speech-icon-button${status === "playing" ? " speech-playing" : ""}`} disabled={!sentences.length}
+                    <button type="button" className={`player-icon-button${status === "playing" ? " player-playing" : ""}`} disabled={!sentences.length}
                         aria-label={status === "playing" ? "Stop reading" : "Play reading"}
                         title={status === "playing" ? "Stop reading" : "Play reading"}
                         onClick={() => status === "playing" ? pause() : play(positionRef.current)}>
                         <span className="material-icons" aria-hidden="true">{status === "playing" ? "pause" : "play_arrow"}</span>
                     </button>
-                    <label className="speech-mini-position">
+                    <label className="player-position">
                         <span aria-hidden="true">{sentences.length ? currentPosition + 1 : 0} / {sentences.length}</span>
                         <input type="range" min="0" max={Math.max(0, sentences.length - 1)} step="1"
                             value={currentPosition} disabled={!sentences.length}
@@ -452,12 +454,12 @@ export default function SpeechPassage({ defaultFollow = false, autoPlayGeneratio
                                 else setStatus("paused");
                             }} />
                     </label>
-                    <button type="button" className={`speech-icon-button${follow ? " speech-follow-active" : ""}`}
+                    <button type="button" className={`player-icon-button${follow ? " speech-follow-active" : ""}`}
                         aria-label="Follow highlighted text" aria-pressed={follow} title={`Follow highlighted text: ${follow ? "on" : "off"}`}
                         onClick={() => changeFollow(!follow)}>
                         <span className="material-icons" aria-hidden="true">my_location</span>
                     </button>
-                    <button type="button" className="speech-icon-button" aria-label="Read aloud settings"
+                    <button type="button" className="player-icon-button" aria-label="Read aloud settings"
                         aria-haspopup="dialog" onClick={() => settingsRef.current?.showModal()}>
                         <span className="material-icons" aria-hidden="true">settings</span>
                     </button>
@@ -466,19 +468,19 @@ export default function SpeechPassage({ defaultFollow = false, autoPlayGeneratio
                 {error && <p className="passage-error" role="alert">{error}</p>}
             </div>}
             {!playerOpen && error && <p className="passage-error" role="alert">{error}</p>}
-            {createPortal(<dialog ref={settingsRef} className="passage-picker speech-settings" aria-labelledby={`${id}-speech-settings-title`}
+            {createPortal(<dialog ref={settingsRef} className="dialog speech-settings" aria-labelledby={`${id}-speech-settings-title`}
                 onClick={event => {
                     if (event.target !== event.currentTarget) return;
                     const rect = event.currentTarget.getBoundingClientRect();
                     if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) settingsRef.current?.close();
                 }}>
-                <div className="passage-picker-heading">
+                <div className="dialog-heading">
                     <h2 id={`${id}-speech-settings-title`}>Read aloud settings</h2>
-                    <button type="button" className="passage-picker-close" aria-label="Close read aloud settings" onClick={() => settingsRef.current?.close()}>×</button>
+                    <button type="button" className="dialog-close" aria-label="Close read aloud settings" onClick={() => settingsRef.current?.close()}>×</button>
                 </div>
-                <div className="passage-picker-panel speech-settings-content">
+                <div className="dialog-panel speech-settings-content">
                     <span>Voice</span>
-                    <ListPicker title="Select voice" className="version-select" closeOnSelect={false} options={voices.map((item, index) => ({
+                    <ListPicker title="Select voice" className="compact-select" closeOnSelect={false} options={voices.map((item, index) => ({
                         value: index, label: `${item.name} — ${item.lang}${item.localService ? " · Local" : " · Online"}`,
                     }))} value={voice ? voices.indexOf(voice) : null} disabled={!voices.length}
                         onChange={index => {

@@ -1,0 +1,221 @@
+/* PDF pages keep their original typography; controls follow the app theme. */
+.pdf-header
+{
+  display: block;
+}
+
+.pdf-title-row,
+.pdf-navigation
+{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.pdf-title-button
+{
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.pdf-title-button:disabled { opacity: 0.5; cursor: default; }
+.pdf-title-button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.pdf-reader .player-disclosure { position: static; }
+.pdf-settings-content { display: grid; gap: 18px; }
+.pdf-settings-content fieldset { display: grid; gap: 12px; padding: 0; margin: 0; border: 0; }
+.pdf-settings-content legend { margin-bottom: 10px; font-weight: 600; }
+.pdf-settings-content fieldset label { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.pdf-settings-content input[type="checkbox"] { accent-color: var(--brand); width: 18px; height: 18px; }
+.pdf-settings-content .pdf-zoom { color: var(--text); }
+
+.pdf-navigation
+{
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  margin-top: 10px;
+}
+
+.pdf-navigation form
+{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.pdf-navigation label
+{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pdf-navigation input
+{
+  /* Leave room for four digits as well as the control's padding and border. */
+  width: calc(4ch + 20px);
+  flex-shrink: 0;
+  min-width: 0;
+  text-align: center;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.pdf-navigation input::-webkit-inner-spin-button,
+.pdf-navigation input::-webkit-outer-spin-button
+{
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.pdf-navigation button
+{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.pdf-zoom
+{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.pdf-navigation button,
+.pdf-navigation input,
+.pdf-zoom select,
+.pdf-word-runner button
+{
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 8px;
+  background: var(--accent1);
+  color: var(--text);
+  border: 1px solid var(--outline);
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.pdf-navigation button:enabled:hover
+{
+  background: var(--surface-hover);
+}
+
+.pdf-word-runner button:focus-visible,
+.pdf-word-runner input:focus-visible,
+.pdf-navigation button:focus-visible,
+.pdf-navigation input:focus-visible,
+.pdf-zoom select:focus-visible
+{
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+.pdf-word-runner button:disabled,
+.pdf-navigation button:disabled
+{
+  opacity: 0.5;
+  cursor: default;
+}
+
+.pdf-storage-note
+{
+  margin-top: 12px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.pdf-page-view { margin-top: 12px; }
+.pdf-page-view summary { color: var(--text-muted); cursor: pointer; margin-bottom: 8px; }
+
+.pdf-viewport
+{
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 8px;
+}
+
+.pdf-viewport canvas
+{
+  display: block;
+  max-width: none;
+}
+
+.pdf-page-text
+{
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 1px solid var(--outline);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.pdf-page-text summary
+{
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.pdf-page-text .speech-integrated-text
+{
+  box-sizing: border-box;
+  max-width: 65ch;
+  margin: 16px auto 0;
+  padding: clamp(14px, 3vw, 28px);
+  background: color-mix(in srgb, var(--background), var(--text) 3%);
+  border: 1px solid var(--outline);
+  border-radius: 12px;
+  font-size: 1rem;
+  line-height: 1.85;
+  text-align: start;
+}
+
+.pdf-page-text p
+{
+  /* Preserve extracted line breaks and spacing, with wrapping on narrow screens. */
+  white-space: pre-wrap;
+  margin: 0 0 1.2em;
+}
+
+.pdf-page-text .speech-integrated-text p:last-child { margin-bottom: 0; }
+
+.pdf-page-text .pdf-formatted-text { white-space: normal; }
+.pdf-page-text .pdf-text-line {
+  display: block;
+  min-height: 1.85em;
+  /* Distinguish extracted line breaks from wrapping within a line. */
+  padding-bottom: 0.2em;
+  white-space: pre-wrap;
+}
+.pdf-page-text .pdf-text-separator { display: none; }
+.pdf-page-text .pdf-text-gap { margin-bottom: 0.9em; }
+.pdf-page-text .pdf-text-heading { font-weight: 700; line-height: 1.4; }
+.pdf-page-text .pdf-text-large { font-size: 1.15em; }
+.pdf-page-text .pdf-text-small { font-size: 0.85em; }
+.pdf-page-text .speech-integrated-text strong { font-weight: 700; }
+.pdf-page-text .pdf-text-accent { color: color-mix(in srgb, var(--brand), var(--text) 35%); }
+.pdf-page-text .pdf-text-indent-1 { padding-inline-start: 1.5em; }
+.pdf-page-text .pdf-text-indent-2 { padding-inline-start: 3em; }
+.pdf-page-text .pdf-text-indent-3 { padding-inline-start: 4.5em; }
+.pdf-page-text .pdf-text-indent-4 { padding-inline-start: 6em; }
+.pdf-page-text .pdf-text-list { hanging-punctuation: first; }
+.pdf-page-text .pdf-text-center { text-align: center; padding-inline-start: 0; }
+.pdf-page-text .pdf-text-right { text-align: right; padding-inline-start: 0; }
+

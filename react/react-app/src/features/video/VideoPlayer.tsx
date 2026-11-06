@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { loadYouTubeApi, type YouTubePlayer } from "./youtubePlayer";
+import { usePlaybackWakeLock } from "../usePlaybackWakeLock.ts";
 
 type Props = { id: string; videoId: string; title: string };
 
@@ -14,6 +15,8 @@ function readPositions(id: string): Record<string, number> {
 export default function VideoPlayer({ id, videoId, title }: Props) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [apiFailed, setApiFailed] = useState(false);
+    const [playing, setPlaying] = useState(false);
+    usePlaybackWakeLock(playing);
 
     useEffect(() => {
         let cancelled = false;
@@ -62,6 +65,7 @@ export default function VideoPlayer({ id, videoId, title }: Props) {
                     },
                     onStateChange: event => {
                         if (cancelled) return;
+                        setPlaying(event.data === 1 || event.data === 3);
                         ended = event.data === 0;
                         if (event.data === 0 || event.data === 1 || event.data === 2) hasStarted = true;
                         if (event.data === 2) allowZero = true;

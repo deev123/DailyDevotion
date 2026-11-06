@@ -104,7 +104,7 @@ export default function Psalter({ id, layoutOptions }: { id: string; layoutOptio
     return <section ref={sectionRef}>
         <div ref={headerRef} className="passage-header integrated-passage-header">
             <PassagePicker references={references} value={index} onChange={select} />
-            <button type="button" className="speech-icon-button speech-player-toggle" aria-label={playerOpen ? "Close tune player" : "Open tune player"}
+            <button type="button" className="player-icon-button player-toggle" aria-label={playerOpen ? "Close tune player" : "Open tune player"}
                 aria-expanded={playerOpen} aria-controls={`${id}-tune-player`} onClick={() => {
                     if (playerOpen) pauseAndReset();
                     setPlayerOpen(!playerOpen);
@@ -113,17 +113,17 @@ export default function Psalter({ id, layoutOptions }: { id: string; layoutOptio
         </div>
         <audio ref={audioRef} src={`${import.meta.env.BASE_URL}psalter-tunes/${initialTune.current}`} loop preload="none"
             onPlay={() => setPlaying(!audioRef.current?.paused)} onPause={() => setPlaying(!audioRef.current?.paused)} onError={() => setAudioError("Could not load the tune.")} />
-        {playerOpen && <div className="speech-disclosure speech-disclosure-open">
-            <div id={`${id}-tune-player`} className="speech-mini-player" role="group" aria-label="Psalm tune player">
-                <button type="button" className={`speech-icon-button${playing ? " speech-playing" : ""}`}
+        {playerOpen && <div className="player-disclosure player-disclosure-open">
+            <div id={`${id}-tune-player`} className="player-bar" role="group" aria-label="Psalm tune player">
+                <button type="button" className={`player-icon-button${playing ? " player-playing" : ""}`}
                     aria-label={playing ? "Pause tune" : "Play tune"} onClick={() => {
                         if (playing) pauseAndReset(); else void play();
                     }}>
                     <span className="material-icons" aria-hidden="true">{playing ? "pause" : "play_arrow"}</span>
                 </button>
-                <ListPicker title="Select tune" className="version-select psalter-tune-select" closeOnSelect={false}
+                <ListPicker title="Select tune" className="compact-select psalter-tune-select" closeOnSelect={false}
                     options={tunes.map((item, i) => ({ value: i, label: item.name }))} value={tune} onChange={changeTune} />
-                <label className="speech-mini-position psalter-speed">
+                <label className="player-position psalter-speed">
                     <span>Speed {speed.toFixed(1)}×</span>
                     <input type="range" min="0.5" max="4" step="0.1" value={speed} aria-label="Tune speed"
                         aria-valuetext={`${speed.toFixed(1)} times`} onChange={event => {

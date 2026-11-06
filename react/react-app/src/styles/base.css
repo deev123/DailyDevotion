@@ -1,0 +1,94 @@
+/* Animate one inherited offset so both headers share the same position each frame. */
+@property --header-offset {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 48px;
+}
+
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("../assets/fonts/OpenDyslexic-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("../assets/fonts/OpenDyslexic-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("../assets/fonts/OpenDyslexic-Italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("../assets/fonts/OpenDyslexic-Bold-Italic.woff2") format("woff2");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+:root {
+  --header-offset: 48px;
+  transition: --header-offset 0.2s ease;
+  --font-family: Arial, sans-serif;
+  --font-size: 100%;
+  --letter-spacing: 0em;
+  font-size: var(--font-size);
+  /* Preserve user-selected colours instead of browser auto-darkening them. */
+  color-scheme: only light;
+  --background: #1e1e1e;
+  --text: #d7d7d7;
+  
+  /* accents are derived from the background and text colours so the whole
+     theme stays coherent when only those two are changed */
+  --outline: color-mix(in srgb, var(--background), var(--text) 55%);
+  --accent1: color-mix(in srgb, var(--background), var(--text) 10%);
+  --border-subtle: color-mix(in srgb, var(--background), var(--text) 24%);
+
+  /* extra derived surfaces used by panels, menus, hovers */
+  --surface-hover: color-mix(in srgb, var(--background), var(--text) 25%);
+  --text-muted: color-mix(in srgb, var(--background), var(--text) 85%);
+
+  /* brand accent, kept mostly-purple but blended toward the theme so it adapts */
+  --brand: color-mix(in srgb, #866efb, var(--background) 30%);
+}
+
+body
+{
+  font-family: var(--font-family);
+  letter-spacing: var(--letter-spacing);
+  background: var(--background);
+  color: var(--text);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 10px;
+}
+
+button, input, select, textarea
+{
+  font-family: inherit;
+  letter-spacing: inherit;
+}
+
+/* Icon ligatures must keep their original spacing. */
+.material-icons
+{
+  letter-spacing: normal;
+}
+
+.hidden
+{
+  display:none !important;
+}
+    

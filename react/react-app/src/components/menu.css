@@ -1,0 +1,51 @@
+.options-menu
+{
+  position: relative;
+}
+
+.menu
+{
+  position:absolute;
+  top: -50px;
+  right: 0px;
+  display: flex;
+  flex-direction: column;
+  width: max-content;
+  box-sizing: border-box;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px #00000026;
+  gap: 2px;
+  padding: 4px;
+  min-width: 130px;
+  
+  background: var(--background);
+  color: var(--text);
+  z-index: 99999;
+}
+
+.menu button
+{
+  text-align: left;
+  display: block;
+  width: 100%;
+  padding: 10px 10px;
+  margin: 0;
+  line-height: 1.4;
+  font-size: 0.875rem;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  
+  background: none;
+  color: var(--text);
+}
+
+.menu button:hover
+{
+  
+  background: var(--outline);
+  
+  color: var(--background);
+}
+

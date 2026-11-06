@@ -64,22 +64,22 @@ export default function PassagePicker({ references, value, onChange, formatRefer
     }
 
     return <>
-        <button type="button" className="reading-title-select passage-picker-trigger"
+        <button type="button" className="title-select picker-trigger"
             disabled={!books.length} aria-haspopup="dialog" aria-expanded={open}
             aria-controls={`${id}-dialog`} onClick={show}>
             <span>{references[value] ? formatReference(references[value]) : "Select passage"}</span>
             <span aria-hidden="true" className="material-icons">expand_more</span>
         </button>
-        {createPortal(<dialog ref={dialogRef} id={`${id}-dialog`} className="passage-picker"
+        {createPortal(<dialog ref={dialogRef} id={`${id}-dialog`} className="dialog"
             aria-labelledby={`${id}-title`} onClose={() => setOpen(false)}
             onClick={event => {
                 if (event.target !== event.currentTarget) return;
                 const rect = event.currentTarget.getBoundingClientRect();
                 if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close();
             }}>
-            <div className="passage-picker-heading">
+            <div className="dialog-heading">
                 <h2 id={`${id}-title`}>{chapterOnly ? "Select chapter" : "Select passage"}</h2>
-                <button type="button" className="passage-picker-close" aria-label="Close passage selector" onClick={close}>×</button>
+                <button type="button" className="dialog-close" aria-label="Close passage selector" onClick={close}>×</button>
             </div>
             {!chapterOnly && <div className="passage-picker-tabs" role="tablist" aria-label="Passage selection">
                 <button ref={bookTabRef} type="button" role="tab" id={`${id}-book-tab`}
@@ -90,7 +90,7 @@ export default function PassagePicker({ references, value, onChange, formatRefer
                     tabIndex={tab === "chapter" ? 0 : -1} onKeyDown={tabKeyDown} onClick={() => switchTab("chapter")}>Chapter</button>
             </div>}
             {!chapterOnly && <div role="tabpanel" id={`${id}-book-panel`} aria-labelledby={`${id}-book-tab`} hidden={tab !== "book"}
-                className="passage-picker-panel" tabIndex={0}>
+                className="dialog-panel" tabIndex={0}>
                 <div className="passage-picker-books">
                     {books.map(book => <button key={book.name} type="button"
                         aria-pressed={book.name === draftBook?.name} onClick={() => {
@@ -101,7 +101,7 @@ export default function PassagePicker({ references, value, onChange, formatRefer
             </div>}
             <div ref={chapterPanelRef} role={chapterOnly ? "region" : "tabpanel"} id={`${id}-chapter-panel`}
                 aria-labelledby={chapterOnly ? `${id}-title` : `${id}-chapter-tab`} hidden={!chapterOnly && tab !== "chapter"}
-                className="passage-picker-panel" tabIndex={0}>
+                className="dialog-panel" tabIndex={0}>
                 <p className="passage-picker-book-name">{draftBook?.label}</p>
                 <div className="passage-picker-chapters">
                     {draftBook?.chapters.map(chapter => <button key={chapter.index} type="button"

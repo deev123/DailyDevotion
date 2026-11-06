@@ -10,7 +10,7 @@ export function followSpeechHighlight(text: HTMLElement): void {
     if (!target) return;
     const section = target.closest("section");
     const header = section?.querySelector<HTMLElement>(".passage-header");
-    const player = section?.querySelector<HTMLElement>(".speech-mini-player");
+    const player = section?.querySelector<HTMLElement>(".player-bar");
     // The PDF player is already inside its sticky header; a passage player
     // sticks separately below the header.
     const top = 48 + (header?.offsetHeight ?? 0) + (player && !header?.contains(player) ? player.offsetHeight : 0) + 12;

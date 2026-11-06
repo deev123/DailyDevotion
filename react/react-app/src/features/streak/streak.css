@@ -1,0 +1,31 @@
+.streak-area
+{
+  width: auto;
+  pointer-events: none;
+}
+
+.streak-pill
+{
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: var(--surface-hover);
+  border: 1px solid var(--outline);
+  border-radius: 16px;
+  font-size: 0.9rem;
+  color: var(--text);
+  user-select: none;
+}
+
+.streak-flame
+{
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.streak-count
+{
+  font-weight: 700;
+}
+

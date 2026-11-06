@@ -280,7 +280,7 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
                 />
             }
             <div className="integrated-player-trigger" ref={setPlayerTriggerContainer}>
-                {(!html || !!error) && <button type="button" className="speech-icon-button" aria-label="Read aloud unavailable while passage loads" disabled>
+                {(!html || !!error) && <button type="button" className="player-icon-button" aria-label="Read aloud unavailable while passage loads" disabled>
                     <span className="material-icons" aria-hidden="true">volume_up</span>
                 </button>}
             </div>

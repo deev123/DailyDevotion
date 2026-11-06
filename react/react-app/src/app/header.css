@@ -1,0 +1,60 @@
+/* ----- settings sidebar ----- */
+
+/* The header moves as one unit across the top of the page. */
+.top-header
+{
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  background: color-mix(in srgb, var(--background), var(--text) 6%);
+  border-bottom: 1px solid var(--accent1);
+  /* Stay opaque while sliding so the moving sticky heading never exposes text. */
+  transform: translateY(calc(var(--header-offset) - 48px));
+}
+
+.top-header.header-hidden
+{
+  pointer-events: none;
+}
+
+/* Keyboard users can bring the settings button back by focusing it. */
+.top-header:has(:focus-visible)
+{
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce)
+{
+  .top-header { transition: none; }
+}
+
+.hamburger-button
+{
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px !important;
+  border-radius: 8px;
+  line-height: 1;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.hamburger-button:hover
+{
+  color: var(--text);
+}
+

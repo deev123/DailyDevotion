@@ -1,0 +1,12 @@
+/* The picker lives in the top layer, outside sticky headers and reader widths. */
+.picker-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+}
+.picker-trigger > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.picker-trigger .material-icons { font-size: 20px; flex-shrink: 0; }
+.picker-trigger:disabled { opacity: 0.5; cursor: default; }
+

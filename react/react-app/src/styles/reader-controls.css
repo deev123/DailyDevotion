@@ -1,0 +1,13 @@
+.compact-select
+{
+  width: 80%;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--background);
+  color: var(--text);
+  cursor: pointer;
+
+}
+

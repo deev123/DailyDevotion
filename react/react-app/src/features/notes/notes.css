@@ -1,0 +1,58 @@
+.notes-header
+{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notes-header h2
+{
+  padding: 8px 0;
+  margin: 0;
+  min-width: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.4;
+  display: block;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.notes-header-buttons
+{
+  display: flex;
+  justify-content: right;
+  align-items: center;
+}
+
+.notes-edit-button
+{
+  color: var(--text);
+  background: none;
+  border: none;
+  font-size: 22px !important;
+  width: 44px;
+  min-height: 44px;
+  border-radius: 8px;
+  transform: translate(0px, -0px);
+  cursor: pointer;
+}
+
+.notes-edit-button:hover
+{
+  color: var(--text);
+  background: var(--accent1);
+}
+
+.notes-content
+{
+  padding: 5px;
+}
+
+.hide-text
+{
+  padding: 5px;
+  color:#00000000;
+  text-decoration: line-through #363636 1rem;
+}
+

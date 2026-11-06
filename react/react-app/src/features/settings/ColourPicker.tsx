@@ -43,7 +43,7 @@ export default function ColourPicker({ label, value, contrastWith, target, onCha
             }}>
             <span style={{ background: value }} />
         </button>
-        {createPortal(<dialog ref={dialogRef} id={`${id}-dialog`} className="passage-picker colour-picker"
+        {createPortal(<dialog ref={dialogRef} id={`${id}-dialog`} className="dialog colour-picker"
             aria-labelledby={`${id}-title`} onClose={() => setOpen(false)}
             onKeyDown={event => { if (event.key === "Escape") event.stopPropagation(); }}
             onClick={event => {
@@ -53,11 +53,11 @@ export default function ColourPicker({ label, value, contrastWith, target, onCha
                 const rect = event.currentTarget.getBoundingClientRect();
                 if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close();
             }}>
-            <div className="passage-picker-heading">
+            <div className="dialog-heading">
                 <h2 id={`${id}-title`}>{label}</h2>
-                <button type="button" className="passage-picker-close" aria-label="Cancel colour selection" onClick={close}>×</button>
+                <button type="button" className="dialog-close" aria-label="Cancel colour selection" onClick={close}>×</button>
             </div>
-            <div className="passage-picker-panel">
+            <div className="dialog-panel">
                 <div className="colour-picker-preview" style={{
                     background: target === "background" ? draft : contrastWith,
                     color: target === "text" ? draft : contrastWith,

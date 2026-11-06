@@ -352,7 +352,7 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
         <section className="pdf-reader" aria-label={name || "PDF reader"}>
             <div className="passage-header pdf-header">
                 <div className="pdf-title-row">
-                    <button type="button" className="reading-title-select pdf-title-button" disabled={busy}
+                    <button type="button" className="title-select pdf-title-button" disabled={busy}
                         title={pdf ? `Replace ${name}` : "Choose a PDF"}
                         aria-label={pdf ? `Replace PDF: ${name}` : "Choose a PDF"}
                         onClick={() => fileInputRef.current?.click()}>{name || "Choose a PDF"}</button>
@@ -361,7 +361,7 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
                         e.target.value = "";
                         if (file) void chooseFile(file);
                     }} />
-                    <button type="button" className="speech-icon-button speech-player-toggle" disabled={!pdf || busy}
+                    <button type="button" className="player-icon-button player-toggle" disabled={!pdf || busy}
                         aria-label={runnerOpen ? "Close word runner" : "Open word runner"}
                         title={runnerOpen ? "Close word runner" : "Open word runner"}
                         aria-expanded={runnerOpen} aria-controls={runnerOpen ? `${id}-word-runner` : undefined}
@@ -371,11 +371,11 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
                             setRunning(false);
                         }}><span className="material-icons" aria-hidden="true">speed</span></button>
                     <div className="integrated-player-trigger" ref={setPlayerTriggerContainer}>
-                        {(!pdf || busy || !textReady) && <button type="button" className="speech-icon-button" disabled aria-label="Read aloud unavailable while PDF loads">
+                        {(!pdf || busy || !textReady) && <button type="button" className="player-icon-button" disabled aria-label="Read aloud unavailable while PDF loads">
                             <span className="material-icons" aria-hidden="true">volume_up</span>
                         </button>}
                     </div>
-                    <button type="button" className="speech-icon-button" aria-label="PDF display settings" title="PDF display settings"
+                    <button type="button" className="player-icon-button" aria-label="PDF display settings" title="PDF display settings"
                         aria-haspopup="dialog" aria-expanded={settingsOpen} aria-controls={`${id}-pdf-settings`}
                         onClick={() => { settingsRef.current?.showModal(); setSettingsOpen(true); }}>
                         <span className="material-icons" aria-hidden="true">settings</span>
@@ -411,7 +411,7 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
                         if (sectionsRef.current.showText) setSection("text", true);
                     }}
                     onPlayerOpen={() => { setRunning(false); setSection("runner", false); }} />}
-                {pdf && !busy && !textReady && sections.speech && <div className="speech-mini-player" role="status">
+                {pdf && !busy && !textReady && sections.speech && <div className="player-bar" role="status">
                     Loading read aloud…
                 </div>}
             </div>
@@ -470,7 +470,7 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
                 {(!textReady || busy) ? <p>Loading page text…</p>
                     : !pageText && <p>No text is available for this page. Scanned pages may contain only images.</p>}
             </details>}
-            {createPortal(<dialog ref={settingsRef} id={`${id}-pdf-settings`} className="passage-picker pdf-settings"
+            {createPortal(<dialog ref={settingsRef} id={`${id}-pdf-settings`} className="dialog pdf-settings"
                 aria-labelledby={`${id}-pdf-settings-title`} onClose={() => setSettingsOpen(false)}
                 onClick={event => {
                     event.stopPropagation();
@@ -478,11 +478,11 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
                     const rect = event.currentTarget.getBoundingClientRect();
                     if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) settingsRef.current?.close();
                 }}>
-                <div className="passage-picker-heading">
+                <div className="dialog-heading">
                     <h2 id={`${id}-pdf-settings-title`}>PDF display settings</h2>
-                    <button type="button" className="passage-picker-close" aria-label="Close PDF display settings" onClick={() => settingsRef.current?.close()}>×</button>
+                    <button type="button" className="dialog-close" aria-label="Close PDF display settings" onClick={() => settingsRef.current?.close()}>×</button>
                 </div>
-                <div className="passage-picker-panel pdf-settings-content">
+                <div className="dialog-panel pdf-settings-content">
                     <fieldset>
                         <legend>Show sections</legend>
                         <label><input type="checkbox" checked={sections.showPage} onChange={event => setSection("showPage", event.target.checked)} /> Page view</label>

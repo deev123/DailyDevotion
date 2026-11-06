@@ -1,0 +1,29 @@
+.add-component-container {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.add-component-button
+{
+    font-size: 24px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    color: var(--text);
+    background: var(--accent1);
+    cursor: pointer;
+}
+
+.add-component-button:hover
+{
+    color: var(--accent1);
+    background: var(--text);
+    transition:0.2s;
+}
+
+.notes-edit-button
+{
+  height:100%;
+}
+
