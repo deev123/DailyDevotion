@@ -128,7 +128,7 @@ function SettingsSidebar({ onOpenChange, onNavigate, components }: { onOpenChang
     function getContents() {
         return components.map(component => {
             const section = document.getElementById(`contents-${component.id}`);
-            const fallback = { passage2: "Passage", notebox: "Notes", videoPlaylist: "Video playlist", catechism: "Catechism", psalter: "Psalter", pdfReader: "PDF reader" }[component.type];
+            const fallback = { passage2: "Passage", notebox: "Notes", videoPlaylist: "Video playlist", catechism: "Catechism", psalter: "Psalter", pdfReader: "PDF reader", audioPlayer: "Audio player" }[component.type];
             const selector = component.type === "notebox" ? ".notes-header h2" : component.type === "pdfReader" ? ".pdf-title-button" : ".passage-header .title-select > span:first-child";
             const label = section?.querySelector(selector)?.textContent?.trim();
             return { id: component.id, label: label && label !== "Choose a PDF" && !label.startsWith("Select ") ? label : fallback };

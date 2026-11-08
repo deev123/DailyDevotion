@@ -7,6 +7,8 @@ import Psalter from "../features/psalter/Psalter.tsx"
 import Catechism from "../features/catechism/Catechism.tsx"
 import Header from "./Header.tsx"
 import Menu from "../components/Menu.tsx"
+import AudioPlayer from "../features/audio/AudioPlayer.tsx"
+import { deleteAudio } from "../features/audio/audioStorage.ts"
 import { deletePdf } from "../features/pdf/pdfStorage.ts"
 
 const PdfReader = lazy(() => import("../features/pdf/PdfReader.tsx"));
@@ -92,6 +94,9 @@ function Layout(){
                 return;
             }
         }
+        if (componentsConfig.some(component => component.id === id && component.type === "audioPlayer")) {
+            try { await deleteAudio(id); } catch { setLayoutError("Could not delete saved audio. Please try again."); return; }
+        }
         setComponentsConfig((prev) => {
             const index = prev.findIndex(c => c.id === id);
             if(index === -1) return prev; // not found
@@ -100,6 +105,9 @@ function Layout(){
             // Potentially better to make classes for each component with helpers like deleteStores()
             // but for now layout will manage cleanup here
             switch(prev[index].type){
+                case "audioPlayer":
+                    localStorage.removeItem(id + "_audioRate");
+                    break;
                 case "notebox":
                     localStorage.removeItem(id + "_title");
                     localStorage.removeItem(id + "_text");
@@ -172,6 +180,10 @@ function Layout(){
     // addComponent takes a component_t config object as an argmunet to add to layout
     // these menu options define the configs to pass for each type of component
     let addElementOptions = [
+    {
+        label: "Audio player",
+        action: () => addComponent({ type: "audioPlayer", id: generateId() })
+    },
     {
         label: "PDF reader",
         action: () => addComponent({ type: "pdfReader", id: generateId() })
@@ -258,6 +270,9 @@ function Layout(){
 
             let content;
             switch(c.type){
+                case "audioPlayer":
+                    content = <AudioPlayer layoutOptions={layoutOptions} id={c.id}/>;
+                    break;
                 case "pdfReader":
                     content = <Suspense fallback={<section><p>Loading PDF reader…</p></section>}>
                         <PdfReader layoutOptions={layoutOptions} id={c.id}/>

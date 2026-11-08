@@ -1,0 +1,18 @@
+.audio-heading, .audio-track, .audio-actions { display: flex; align-items: center; gap: 8px; }
+.audio-heading { justify-content: space-between; }
+.audio-heading h2 { margin: 0; }
+.audio-actions { margin: 10px 0; }
+.audio-add { cursor: pointer; padding: 8px 12px; border: 1px solid var(--border-subtle); border-radius: 6px; background: var(--accent1); }
+.audio-add input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.audio-add:focus-within { outline: 2px solid var(--text); }
+.audio-track-list { display: grid; gap: 4px; margin-bottom: 10px; }
+.audio-track-select { flex: 1; min-width: 0; display: flex; justify-content: space-between; gap: 10px; text-align: left; overflow-wrap: anywhere; padding: 9px; border: 1px solid var(--border-subtle); border-radius: 6px; background: var(--background); color: var(--text); cursor: pointer; }
+.audio-track > button.audio-track-selected { background: var(--accent1); }
+.audio-track-options { border-color: transparent; }
+.audio-rename { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.audio-rename input { flex: 1; min-width: 0; padding: 9px; border: 1px solid var(--border-subtle); border-radius: 6px; background: var(--background); color: var(--text); }
+.audio-track small { color: var(--text-muted); white-space: nowrap; }
+.audio-controls::before { display: none; }
+.audio-speed { display: flex; align-items: center; gap: 4px; font-size: .8rem; color: var(--text-muted); }
+.audio-speed select { color: var(--text); background: var(--background); border: 1px solid var(--border-subtle); border-radius: 5px; padding: 6px; }
+.audio-empty { color: var(--text-muted); }
