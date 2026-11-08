@@ -1,0 +1,26 @@
+.verse-flashcard-section { color: var(--text); }
+.verse-flashcard-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.verse-flashcard-heading h2 { margin: 3px 0 0; font-size: 1.25rem; }
+.verse-flashcard-experimental { font-size: .65rem; letter-spacing: .1em; color: var(--text-muted); }
+.verse-flashcard-settings, .verse-flashcard-submit { margin: 12px 0; padding: 9px 12px; border: 1px solid var(--border-subtle); border-radius: 6px; background: var(--accent1); color: var(--text); cursor: pointer; }
+.verse-flashcard-settings:hover, .verse-flashcard-submit:hover { background: var(--surface-hover); }
+.verse-flashcard-form { display: grid; gap: 8px; padding: 12px; margin-bottom: 12px; border: 1px solid var(--border-subtle); border-radius: 8px; }
+.verse-flashcard-form .title-select { width: 100%; }
+.verse-flashcard-label, .verse-flashcard-form label { font-size: .85rem; color: var(--text-muted); }
+.verse-flashcard-form label { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.verse-flashcard-form input { width: 6rem; padding: 8px; border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text); background: var(--background); }
+.verse-flashcard-submit { margin: 4px 0 0; }
+.verse-flashcard-card { display: block; width: 100%; padding: 0; border: 0; border-radius: 10px; background: transparent; color: var(--text); text-align: left; cursor: pointer; perspective: 1200px; }
+.verse-flashcard-inner { display: grid; width: 100%; transform-style: preserve-3d; transition: transform .25s ease; }
+.verse-flashcard-inner.is-flipped { transform: rotateY(180deg); }
+.verse-flashcard-face { grid-area: 1 / 1; display: flex; flex-direction: column; justify-content: space-between; gap: 22px; min-width: 0; min-height: 220px; box-sizing: border-box; padding: 20px; border: 1px solid var(--border-subtle); border-radius: 10px; background: var(--accent1); overflow-wrap: anywhere; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.verse-flashcard-back { transform: rotateY(180deg); }
+.verse-flashcard-card:hover .verse-flashcard-face { border-color: var(--outline); }
+@media (prefers-reduced-motion: reduce) { .verse-flashcard-inner { transition: none; } }
+.verse-flashcard-reference { font-weight: 600; font-size: .9rem; }
+.verse-flashcard-text { font-size: 1.15rem; line-height: 1.65; white-space: pre-wrap; }
+.verse-flashcard-line { display: block; }
+.verse-flashcard-number { font-size: .75em; vertical-align: baseline; }
+.verse-flashcard-flip, .verse-flashcard-copyright { font-size: .75rem; line-height: 1.5; color: var(--text-muted); }
+.verse-flashcard-copyright { white-space: pre-wrap; }
+.verse-flashcard-retry { border: 0; padding: 0; color: inherit; background: none; text-decoration: underline; cursor: pointer; }

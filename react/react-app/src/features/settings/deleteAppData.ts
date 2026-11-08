@@ -5,7 +5,7 @@ const appKeys = [
     "componentsConfig", "streak", "themeBackground", "themeText", "themePreset",
     "themeCustomBackground", "themeCustomText", "themeFont", "themeFontSize", "themeLetterSpacing", "defaultSpeechVoice", "defaultBibleVersion",
 ];
-const componentSuffixes = ["_index", "_version", "_title", "_text", "_state", "_voice", "_speechRate", "_speechPosition", "_speechFollow", "_speechContinue", "_videoPositions", "_videoPlaylist", "_customVideos", "_customVideoIndex", "_pdfSections", "_audioRate"];
+const componentSuffixes = ["_index", "_version", "_title", "_text", "_state", "_voice", "_speechRate", "_speechPosition", "_speechFollow", "_speechContinue", "_videoPositions", "_videoPlaylist", "_customVideos", "_customVideoIndex", "_pdfSections", "_audioRate", "_flashcard"];
 
 /** Remove this app's data without clearing unrelated apps on the same origin. */
 export async function deleteAppData(): Promise<void> {

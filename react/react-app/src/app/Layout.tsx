@@ -7,6 +7,7 @@ import Psalter from "../features/psalter/Psalter.tsx"
 import Catechism from "../features/catechism/Catechism.tsx"
 import Header from "./Header.tsx"
 import Menu from "../components/Menu.tsx"
+import VerseFlashcard from "../features/flashcard/VerseFlashcard.tsx"
 import VerseGame from "../features/versegame/VerseGame.tsx"
 import AudioPlayer from "../features/audio/AudioPlayer.tsx"
 import { deleteAudio } from "../features/audio/audioStorage.ts"
@@ -106,6 +107,9 @@ function Layout(){
             // Potentially better to make classes for each component with helpers like deleteStores()
             // but for now layout will manage cleanup here
             switch(prev[index].type){
+                case "verseFlashcard":
+                    localStorage.removeItem(id + "_flashcard");
+                    break;
                 case "audioPlayer":
                     localStorage.removeItem(id + "_audioRate");
                     break;
@@ -181,6 +185,10 @@ function Layout(){
     // addComponent takes a component_t config object as an argmunet to add to layout
     // these menu options define the configs to pass for each type of component
     let addElementOptions = [
+    {
+        label: "Verse flashcard (experimental)",
+        action: () => addComponent({ type: "verseFlashcard", id: generateId() })
+    },
     {
         label: "Verse Finder Game (experimental)",
         action: () => addComponent({ type: "verseGame", id: generateId() })
@@ -275,6 +283,9 @@ function Layout(){
 
             let content;
             switch(c.type){
+                case "verseFlashcard":
+                    content = <VerseFlashcard layoutOptions={layoutOptions} id={c.id}/>;
+                    break;
                 case "verseGame":
                     content = <VerseGame layoutOptions={layoutOptions}/>;
                     break;
