@@ -124,9 +124,11 @@ export default function VerseFlashcard({ id, layoutOptions }: { id: string; layo
         {selection && text && !loading && <><button type="button" className="verse-flashcard-card" onClick={() => setFlipped(value => !value)} aria-label={`${reference(selection)}. ${flipped ? "Full passage" : "First letters"}: ${flipped ? text : initials(text)}. Activate to show ${flipped ? "first letters" : "full passage"}.`}>
             <span className={`verse-flashcard-inner${flipped ? " is-flipped" : ""}`} aria-hidden="true">
                 {[{ label: "First letters", content: initials(text), face: "front" }, { label: "Full passage", content: text, face: "back" }].map(side => <span key={side.face} className={`verse-flashcard-face verse-flashcard-${side.face}`}>
-                    <span className="verse-flashcard-reference">{reference(selection)} · {selectedVersion?.abbreviation ?? ""}</span>
-                    <span className="verse-flashcard-text">{renderVerses(side.content)}</span>
-                    <span className="verse-flashcard-flip">{side.label} · Tap to flip</span>
+                    <span className="verse-flashcard-content">
+                        <span className="verse-flashcard-reference">{reference(selection)}</span>
+                        <span className="verse-flashcard-text">{renderVerses(side.content)}</span>
+                    </span>
+                    <span className="verse-flashcard-flip">{selectedVersion?.abbreviation && `${selectedVersion.abbreviation} · `}{side.label} · Tap to flip</span>
                 </span>)}
             </span>
         </button>{copyright && <p className="verse-flashcard-copyright">{copyright}</p>}</>}

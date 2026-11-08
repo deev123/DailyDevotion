@@ -17,7 +17,8 @@
 .verse-flashcard-back { transform: rotateY(180deg); }
 .verse-flashcard-card:hover .verse-flashcard-face { border-color: var(--outline); }
 @media (prefers-reduced-motion: reduce) { .verse-flashcard-inner { transition: none; } }
-.verse-flashcard-reference { font-weight: 600; font-size: .9rem; }
+.verse-flashcard-content { display: block; }
+.verse-flashcard-reference { display: block; margin-bottom: 12px; font-size: 1.15rem; font-weight: 700; line-height: 1.5; }
 .verse-flashcard-text { font-size: 1.15rem; line-height: 1.65; white-space: pre-wrap; }
 .verse-flashcard-line { display: block; }
 .verse-flashcard-number { font-size: .75em; vertical-align: baseline; }
