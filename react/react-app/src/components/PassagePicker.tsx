@@ -6,12 +6,13 @@ type Props = {
     value: number;
     onChange: (index: number) => void;
     formatReference?: (reference: string) => string;
+    portalTarget?: HTMLElement | null;
 };
 
 type Book = { name: string; label: string; chapters: { number: string; index: number }[] };
 
 /** Selects from a reader's chapter list, leaving loading and persistence to the reader. */
-export default function PassagePicker({ references, value, onChange, formatReference = reference => reference }: Props) {
+export default function PassagePicker({ references, value, onChange, formatReference = reference => reference, portalTarget }: Props) {
     const id = useId();
     const dialogRef = useRef<HTMLDialogElement>(null);
     const chapterPanelRef = useRef<HTMLDivElement>(null);
@@ -109,6 +110,6 @@ export default function PassagePicker({ references, value, onChange, formatRefer
                         onClick={() => { onChange(chapter.index); close(); }}>{chapter.number}</button>)}
                 </div>
             </div>
-        </dialog>, document.body)}
+        </dialog>, portalTarget ?? document.body)}
     </>;
 }

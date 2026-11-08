@@ -1,0 +1,57 @@
+.verse-game { --game-ink: var(--text); --game-muted: var(--text-muted); --game-line: var(--border-subtle); color: var(--game-ink); background: var(--background); border: 1px solid var(--game-line); border-radius: 10px; overflow: hidden; font-family: var(--font-family); box-sizing: border-box; }
+.verse-game:fullscreen { overflow: auto; border-radius: 0; max-width: none; width: 100%; }
+.verse-game:fullscreen * { max-width: none; }
+.verse-game:fullscreen .verse-game-body { max-width: 720px; }
+.verse-game-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 22px; border-bottom: 1px solid var(--game-line); }
+.verse-game-top h2 { margin: 4px 0 0; font-size: 1.5rem; color: var(--game-ink); }
+.verse-game-eyebrow { font: 700 .67rem/1.3 var(--font-family); letter-spacing: .14em; color: var(--game-ink); }
+.verse-game-top-actions { display: flex; gap: 4px; }
+.verse-game-icon { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 6px; color: var(--game-ink); background: transparent; cursor: pointer; }
+.verse-game-icon:hover { background: var(--accent1); }
+.verse-game-body { max-width: 720px; margin: auto; padding: 24px; }
+.verse-game-intro { text-align: center; padding: 24px 0; }
+.verse-game-compass { color: var(--game-ink); font-size: 3rem; }
+.verse-game h3 { color: var(--game-ink); font-size: 1.8rem; margin: 10px 0; }
+.verse-game p { color: var(--game-muted); line-height: 1.5; }
+.verse-game-hint { font: .8rem/1.6 var(--font-family); }
+.verse-game-primary { display: inline-block; padding: 12px 19px; border: 0; border-radius: 6px; background: var(--game-ink); color: var(--background); font: 700 .85rem var(--font-family); cursor: pointer; }
+.verse-game-primary:disabled { opacity: .5; cursor: default; }
+.verse-game-stats { display: flex; justify-content: space-between; gap: 8px; color: var(--game-muted); font: .65rem var(--font-family); letter-spacing: .1em; }
+.verse-game-stats strong { display: block; margin-top: 5px; color: var(--game-ink); font: 1.15rem var(--font-family); letter-spacing: 0; }
+.verse-game-stats .verse-game-urgent strong { color: var(--game-ink); }
+.verse-game-quote { position: relative; margin: 22px 0; padding: 24px; border: 1px solid var(--game-line); border-radius: 10px; background: var(--accent1); }
+.verse-game-quote-mark { color: var(--game-ink); font-size: 3rem; line-height: .8; }
+.verse-game blockquote { margin: 12px 0 18px; font-size: clamp(1.1rem, 3vw, 1.5rem); line-height: 1.5; }
+.verse-game-version { color: var(--game-ink); font: .7rem var(--font-family); }
+.verse-game-guess h3 { font-size: 1.25rem; }.verse-game-guess p { margin: 4px 0 16px; font-size: .9rem; }
+.verse-game-selects { display: flex; gap: 10px; margin-bottom: 16px; }.verse-game-selects label { flex: 1; min-width: 0; color: var(--game-muted); font: .7rem var(--font-family); }.verse-game-selects select { display: block; width: 100%; margin-top: 6px; padding: 10px; border: 1px solid var(--game-line); border-radius: 6px; color: var(--game-ink); background: var(--background); }
+.verse-game-result { text-align: center; }.verse-game-result strong { display: block; color: var(--game-ink); margin: 16px 0; }.verse-game-intro h3 small { font-size: 1rem; color: var(--game-muted); }.verse-game-error { color: var(--game-ink) !important; }.verse-game-copyright { font: .7rem/1.5 var(--font-family); white-space: pre-wrap; }
+.verse-game-hint-verse { margin: 12px 0; padding-left: 12px; border-left: 2px solid var(--outline); color: var(--game-muted) !important; font-size: 1rem; }
+.verse-game-hints { margin-bottom: 24px; color: var(--game-muted); font: .75rem/1.5 var(--font-family); }
+.verse-game-hints > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.verse-game-hints button { padding: 8px 10px; border: 1px solid var(--game-line); border-radius: 6px; color: var(--game-ink); background: var(--accent1); cursor: pointer; }
+.verse-game-hints button:disabled { opacity: .5; cursor: default; }
+.verse-game-hints p { margin: 6px 0; font: inherit; }
+.verse-game-picker { margin: 12px 0 16px; }
+.verse-game-picker .picker-trigger { color: var(--game-ink); background: var(--accent1); border: 1px solid var(--game-line); border-radius: 6px; padding: 10px; }
+.verse-context-open, .verse-context-close, .verse-context-more { padding: 9px 13px; border: 1px solid var(--game-line); border-radius: 6px; color: var(--game-ink); background: var(--accent1); cursor: pointer; }
+.verse-context-open { display: block; margin: 18px auto; }
+.verse-context { margin: 20px 0; padding: 16px; border: 1px solid var(--game-line); border-radius: 10px; text-align: left; background: var(--background); }
+.verse-context-heading { display: flex; align-items: start; justify-content: space-between; gap: 10px; }
+.verse-context-heading h3 { font-size: 1.25rem; margin: 5px 0; }
+.verse-context-heading p { margin: 0 0 14px; font: .8rem var(--font-family); }
+.verse-context-scroll { height: min(60vh, 520px); overflow-y: auto; overscroll-behavior: contain; padding: 0 10px; line-height: 1.7; scrollbar-width: none; }
+.verse-context-scroll::-webkit-scrollbar { display: none; }
+.verse-context-question-label, .verse-context-question-text { color: var(--text); background: var(--surface-hover); border-radius: 3px; }
+.verse-context-return { display: block; margin: 0 0 10px; padding: 8px 10px; border: 1px solid var(--game-line); border-radius: 6px; color: var(--game-ink); background: var(--accent1); cursor: pointer; }
+.verse-context-return:hover { background: var(--surface-hover); }
+.verse-context-scroll article { padding: 12px 0; border-bottom: 1px solid var(--game-line); }
+.verse-context-scroll h4 { color: var(--game-ink); margin: 8px 0; font-size: 1.15rem; }
+.verse-context-scroll .passage-body { color: var(--game-ink); }
+.verse-context-scroll .passage-body p { color: inherit; }
+.verse-context-more { display: block; margin: 10px auto; font: .75rem var(--font-family); }
+.verse-context-more:disabled { opacity: .6; }
+
+.verse-game-primary:hover:not(:disabled) { opacity: .85; }
+.verse-game-hints button:hover:not(:disabled), .verse-context-open:hover, .verse-context-close:hover, .verse-context-more:hover:not(:disabled), .verse-game-picker .picker-trigger:hover { background: var(--surface-hover); }
+.verse-game-stats .verse-game-urgent strong { text-decoration: underline; text-underline-offset: 3px; }

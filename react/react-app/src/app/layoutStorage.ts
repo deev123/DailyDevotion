@@ -6,7 +6,8 @@ export type ComponentConfig =
     | { type: "videoPlaylist"; id: string; list: string | VideoEntry[] }
     | { type: "catechism"; id: string; list: string }
     | { type: "pdfReader"; id: string }
-    | { type: "audioPlayer"; id: string };
+    | { type: "audioPlayer"; id: string }
+    | { type: "verseGame"; id: string };
 
 type StoredLayout = {
     components: ComponentConfig[];
@@ -59,7 +60,7 @@ export function parseStoredLayout(json: string | null): StoredLayout | null {
             }
         } else if (type === "catechism" && typeof item.list === "string" && item.list.trim()) {
             component = { type, id, list: item.list };
-        } else if (type === "notebox" || type === "pdfReader" || type === "psalter" || type === "audioPlayer") {
+        } else if (type === "notebox" || type === "pdfReader" || type === "psalter" || type === "audioPlayer" || type === "verseGame") {
             component = { type, id };
         }
         if (component) { ids.add(id); result.components.push(component); }

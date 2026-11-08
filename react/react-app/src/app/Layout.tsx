@@ -7,6 +7,7 @@ import Psalter from "../features/psalter/Psalter.tsx"
 import Catechism from "../features/catechism/Catechism.tsx"
 import Header from "./Header.tsx"
 import Menu from "../components/Menu.tsx"
+import VerseGame from "../features/versegame/VerseGame.tsx"
 import AudioPlayer from "../features/audio/AudioPlayer.tsx"
 import { deleteAudio } from "../features/audio/audioStorage.ts"
 import { deletePdf } from "../features/pdf/pdfStorage.ts"
@@ -181,6 +182,10 @@ function Layout(){
     // these menu options define the configs to pass for each type of component
     let addElementOptions = [
     {
+        label: "Verse Finder Game (experimental)",
+        action: () => addComponent({ type: "verseGame", id: generateId() })
+    },
+    {
         label: "Audio player",
         action: () => addComponent({ type: "audioPlayer", id: generateId() })
     },
@@ -270,6 +275,9 @@ function Layout(){
 
             let content;
             switch(c.type){
+                case "verseGame":
+                    content = <VerseGame layoutOptions={layoutOptions}/>;
+                    break;
                 case "audioPlayer":
                     content = <AudioPlayer layoutOptions={layoutOptions} id={c.id}/>;
                     break;
