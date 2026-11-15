@@ -1,3 +1,4 @@
+import { useStableLoadingHeight } from "./useStableLoadingHeight";
 import LoadingSkeleton from "../../components/LoadingSkeleton";
 import { commentaryUrl } from "./bibleReference";
 import type { MenuOption } from "../../components/Menu.tsx" // import type important for importing types
@@ -7,7 +8,7 @@ import TranslationPicker from "./TranslationPicker"
 import { useBibleMetadata } from "./useBibleMetadata"
 import type { PlayerState } from "../speech/SpeechPassage.tsx"
 import SpeechPassage from "../speech/SpeechPassage.tsx"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useLayoutEffect, useRef } from "react"
 import GooeyCheckbox from "../../components/GooeyCheckbox.tsx"
 import confetti from "canvas-confetti"
 import YouVersionAPI from "./YouVersionAPI.ts"
@@ -79,6 +80,7 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
     const [versionId, setVersionId] = useState<number | null>(() => YouVersionAPI.readSavedVersion(id + "_version") ?? YouVersionAPI.readSavedVersion("defaultBibleVersion"));
     const [attempt, setAttempt] = useState(0);
     const metadata = useBibleMetadata(versionId);
+    const loadingHeight = useStableLoadingHeight(sectionRef, !html && !error);
 
     function saveIndex(val: number) {
         // A reading position belongs only to the chapter it was saved for.
@@ -112,17 +114,15 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
         setIndex(nextIndex);
     }
 
-    useEffect(() => {
-        if (scrollPositionRef.current?.index !== index || (!html && !error)) return;
-        const frame = requestAnimationFrame(() => {
-            const saved = scrollPositionRef.current;
-            const item = sectionRef.current?.closest(".layout-section");
-            if (saved?.index !== index || !item) return;
-            scrollPositionRef.current = null;
-            const delta = item.getBoundingClientRect().bottom - saved.offset;
-            window.scrollBy({ top: delta, behavior: "instant" });
-        });
-        return () => cancelAnimationFrame(frame);
+    useLayoutEffect(() => {
+        const saved = scrollPositionRef.current;
+        if (saved?.index !== index || (!html && !error)) return;
+        const item = sectionRef.current?.closest(".layout-section");
+        if (!item) return;
+        scrollPositionRef.current = null;
+        // The loading height is released in this commit. Preserve the previous
+        // bottom offset before painting the newly sized passage.
+        window.scrollBy({ top: item.getBoundingClientRect().bottom - saved.offset, behavior: "instant" });
     }, [index, html, error]);
 
     async function continueToNextChapter(isCurrent: () => boolean, generation: number): Promise<boolean> {
@@ -214,7 +214,7 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
     const commentary = reference ? commentaryUrl(reference) : null;
 
     return (
-    <section ref={sectionRef}>
+    <section ref={sectionRef} className={loadingHeight !== undefined ? "passage-loading-fixed" : undefined} style={{ height: loadingHeight }}>
         <div ref={headerRef} className="passage-header integrated-passage-header">
             <PassagePicker
                 references={listElements}
@@ -244,7 +244,7 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
                  initialOpen={resumePlayer.open} autoPlay={resumePlayer.playing} autoPlayGeneration={resumePlayer.generation}
                  onContinueChapter={continueToNextChapter}
                  onPlayerStateChange={state => { playerState.current = state; }}
-                 language={metadata.detail?.languageTag || "und"} /> : html ? <div className="speech-integrated-text" dangerouslySetInnerHTML={{ __html: html }} /> : <LoadingSkeleton />}
+                 language={metadata.detail?.languageTag || "und"} /> : html ? <div className="speech-integrated-text" dangerouslySetInnerHTML={{ __html: html }} /> : <LoadingSkeleton fill={loadingHeight !== undefined} />}
             {!error && metadata.failed && <p className="passage-error" role="status">Translation details could not be loaded. Read aloud is unavailable until they load. <button type="button" onClick={metadata.retry}>Retry details</button></p>}
         </div>
         {metadata.detail?.copyright &&

@@ -31,6 +31,7 @@ export default function BibleReader({ active }: { active: boolean }) {
     const [playerIndex, setPlayerIndex] = useState<number | null>(null);
     const [headerContainer, setHeaderContainer] = useState<HTMLDivElement | null>(null);
     const [end, setEnd] = useState(initial.current.index);
+    const [loadingReservation, setLoadingReservation] = useState<{ index: number; height: number } | null>(null);
     const [swipeDirection, setSwipeDirection] = useState(0);
     const [resume, setResume] = useState<PlayerState>({ open: false, playing: false });
     const [restorationCycle, setRestorationCycle] = useState(0);
@@ -214,6 +215,9 @@ export default function BibleReader({ active }: { active: boolean }) {
 
     function navigate(position: ReadingPosition, newVisit = true) {
         window.dispatchEvent(new Event("reading-position-save"));
+        const previous = root.current?.querySelector<HTMLElement>(`[data-chapter-index="${state.current.current.index}"] > section`);
+        const height = previous?.getBoundingClientRect().height;
+        setLoadingReservation(height ? { index: position.index, height } : null);
         setResume({ open: false, playing: false });
         setPlayerIndex(null);
         setSwipeDirection(0);
@@ -328,7 +332,7 @@ export default function BibleReader({ active }: { active: boolean }) {
         {Array.from({ length: end - start + 1 }, (_, offset) => start + offset).map(index =>
             <div className="bible-chapter" data-chapter-index={index} key={index}>
                 <BibleChapter id={`lookupBible_${index}`} references={references}
-                    reader={{ index, version, onVersion: changeVersion, playerContainer, playerActive: playerIndex === index, onPlayerOpen: () => setPlayerIndex(index), headerContainer, headerActive: index === currentIndex, rangeEdge: `${start}:${end}`,
+                    reader={{ index, version, loadingHeight: loadingReservation?.index === index ? loadingReservation.height : undefined, onVersion: changeVersion, playerContainer, playerActive: playerIndex === index, onPlayerOpen: () => setPlayerIndex(index), headerContainer, headerActive: index === currentIndex, rangeEdge: `${start}:${end}`,
                         swipeDirection: index === start ? swipeDirection : 0,
                         onSwipe: next => {
                             navigate({ index: next, verse: "1", offset: 130, version: state.current.current.version }, false);

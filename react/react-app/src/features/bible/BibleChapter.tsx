@@ -1,3 +1,4 @@
+import { useStableLoadingHeight } from "./useStableLoadingHeight";
 import LoadingSkeleton from "../../components/LoadingSkeleton";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -25,6 +26,7 @@ type ReaderControls = {
     headerContainer: HTMLElement | null;
     headerActive: boolean;
     rangeEdge: string;
+    loadingHeight?: number;
 };
 
 /** A chapter in the Bible lookup reader. Layout passage widgets have a separate lifecycle. */
@@ -42,6 +44,7 @@ export default function BibleChapter({ id, references, reader }: { id: string; r
     const html = content.key === passageKey ? content.html : "";
     const error = (!version ? versionError : "") || (content.key === passageKey ? content.error : "");
     const ready = !!html;
+    const loadingHeight = useStableLoadingHeight(section, !html && !error, reader.loadingHeight);
     const chooseInitialVersion = useEffectEvent((next: number) => { if (!reader.version) reader.onVersion(next); });
     useEffect(() => {
         if (version) return;
@@ -109,7 +112,7 @@ export default function BibleChapter({ id, references, reader }: { id: string; r
             </button>}
         </div>
     </div>;
-    return <section ref={section} className="swipe-passage" data-reader-ready={ready} data-loaded-passage={content.key} {...swipeHandlers}>
+    return <section ref={section} className={`swipe-passage${loadingHeight !== undefined ? " passage-loading-fixed" : ""}`} style={{ height: loadingHeight }} data-reader-ready={ready} data-loaded-passage={content.key} {...swipeHandlers}>
         {reader.headerActive && reader.headerContainer && createPortal(header, reader.headerContainer)}
         <div ref={bodyRef} className="passage-body" aria-busy={!html && !error}>
             <h2 className="bible-chapter-title">{label(reference)}</h2>
@@ -123,7 +126,7 @@ export default function BibleChapter({ id, references, reader }: { id: string; r
                     if (!isCurrent() || index + 1 >= references.length) return false;
                     reader.onContinue(index + 1, generation);
                     return true;
-                }} /> : html ? <div className="speech-integrated-text" dangerouslySetInnerHTML={{ __html: html }} /> : <LoadingSkeleton label="Loading chapter…" />}
+                }} /> : html ? <div className="speech-integrated-text" dangerouslySetInnerHTML={{ __html: html }} /> : <LoadingSkeleton label="Loading chapter…" fill={loadingHeight !== undefined} />}
             {!error && metadata.failed && <p className="passage-error" role="status">Translation details could not be loaded. Read aloud is unavailable until they load. <button type="button" onClick={metadata.retry}>Retry details</button></p>}
         </div>
         {metadata.detail?.copyright && <div className="passage-copyright">{metadata.detail.copyright}</div>}
