@@ -11,7 +11,31 @@ function Header({ components, activeTab, onTabChange }: {
     const [hidden, setHidden] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const navigating = useRef(false);
+    const tabsRef = useRef<HTMLDivElement>(null);
+    const [compactTabs, setCompactTabs] = useState(false);
     const navigationTimer = useRef<number | undefined>(undefined);
+
+    useEffect(() => {
+        const tabs = tabsRef.current;
+        if (!tabs) return;
+        const labels = Array.from(tabs.querySelectorAll<HTMLElement>(".app-tab-label"));
+        const observer = new ResizeObserver(() => {
+            let width = 0, tooTall = false;
+            labels.forEach(label => {
+                const button = label.closest("button")!;
+                const style = getComputedStyle(button);
+                // Use text-mode padding even when icon mode is active.
+                const padding = parseFloat(getComputedStyle(tabs).getPropertyValue("--tab-label-padding")) || 12;
+                const icon = button.querySelector<HTMLElement>(".app-tab-icon")!;
+                width += label.scrollWidth + icon.getBoundingClientRect().width + parseFloat(style.columnGap) + padding * 2;
+                tooTall ||= label.scrollHeight > button.clientHeight - parseFloat(style.borderBottomWidth || "0");
+            });
+            setCompactTabs(tooTall || width > tabs.clientWidth);
+        });
+        observer.observe(tabs);
+        labels.forEach(label => observer.observe(label));
+        return () => observer.disconnect();
+    }, []);
 
     function keepHeaderVisible() {
         navigating.current = true;
@@ -64,8 +88,9 @@ function Header({ components, activeTab, onTabChange }: {
 
     return (
         <header className={"top-header" + (hidden && !settingsOpen ? " header-hidden" : "")}>
-            <div className="app-tabs" role="tablist" aria-label="App pages">
+            <div ref={tabsRef} className={`app-tabs${compactTabs ? " app-tabs-compact" : ""}`} role="tablist" aria-label="App pages">
                 {(["bible", "devotion"] as const).map(tab => <button key={tab} type="button" role="tab"
+                    aria-label={tab === "bible" ? "Bible" : "Daily"} title={tab === "bible" ? "Bible" : "Daily"}
                     id={`${tab}-tab`} aria-controls={`${tab}-panel`} aria-selected={activeTab === tab}
                     tabIndex={activeTab === tab ? 0 : -1} onClick={() => { keepHeaderVisible(); onTabChange(tab); }}
                     onKeyDown={event => {
@@ -74,7 +99,10 @@ function Header({ components, activeTab, onTabChange }: {
                         const next = event.key === "Home" ? "bible" : event.key === "End" ? "devotion" : tab === "bible" ? "devotion" : "bible";
                         keepHeaderVisible(); onTabChange(next);
                         document.getElementById(`${next}-tab`)?.focus({ preventScroll: true });
-                    }}>{tab === "bible" ? "Bible" : "Daily Devotion"}</button>)}
+                    }}>
+                    <span className="material-icons app-tab-icon" aria-hidden="true">{tab === "bible" ? "menu_book" : "view_list"}</span>
+                    <span className="app-tab-label" aria-hidden="true">{tab === "bible" ? "Bible" : "Daily"}</span>
+                </button>)}
             </div>
             <Streak />
             <SettingsSidebar onOpenChange={setSettingsOpen} onNavigate={() => { onTabChange("devotion"); keepHeaderVisible(); }} components={components} />

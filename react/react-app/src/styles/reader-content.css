@@ -33,6 +33,7 @@
 {
   margin: 10px 0 10px;
   line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 .integrated-passage-header + .passage-body { margin-top: 0; }

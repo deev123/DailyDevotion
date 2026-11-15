@@ -1,6 +1,7 @@
 .container
 {
   width: 100%;
+  box-sizing: border-box;
   padding: 49px 1px 1px; /* reserve space for the fixed top header */
   display: flex;
   flex-direction: column;
@@ -60,12 +61,23 @@ p
 
 
 #bible-panel[hidden], #devotion-panel[hidden] { display: none !important; }
-.app-tabs { display: flex; margin-right: auto; align-self: stretch; }
+.app-tabs { --tab-label-padding: 12px; display: flex; flex: 1 1 0; min-width: 0; margin-right: auto; align-self: stretch; }
 .app-tabs button {
   border: 0; border-bottom: 3px solid transparent; background: none;
-  color: var(--text-muted); padding: 0 12px; cursor: pointer; font-size: .85rem;
+  color: var(--text-muted); padding: 0 var(--tab-label-padding); cursor: pointer; font-size: .85rem;
+  overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center;
+  min-width: 40px; flex: 0 1 auto; box-sizing: border-box;
 }
 .app-tabs button[aria-selected="true"] { border-bottom-color: var(--brand); color: var(--text); }
-@media (max-width: 380px) { .app-tabs button { padding: 0 6px; font-size: .75rem; } }
+.app-tab-label { white-space: nowrap; flex-shrink: 0; }
+.app-tabs button { column-gap: 8px; }
+.app-tab-icon { display: block; flex: 0 0 24px; width: 24px; font-size: 24px; }
+.app-tabs-compact .app-tab-icon { display: block; }
+.app-tabs-compact .app-tab-label { position: absolute; visibility: hidden; pointer-events: none; }
+.app-tabs-compact button { flex: 0 0 44px; padding: 0; }
+@media (max-width: 380px) { .app-tabs { --tab-label-padding: 6px; } .app-tabs button { font-size: .75rem; } }
 /* Clip sliding text without creating a scrolling ancestor for sticky controls. */
 #bible-panel { overflow-x: clip; }
+
+/* Let reader columns shrink with the viewport instead of widening the page. */
+#root { width: 100%; min-width: 0; }

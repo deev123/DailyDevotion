@@ -70,7 +70,11 @@
   height: 36px;
   border: 1px solid var(--border-subtle);
   border-radius: 4px;
-  font-size: 0.9rem;
+  /* This decorative colour swatch stays inside its fixed-size box. */
+  font-size: 14px;
+  line-height: 1;
+  letter-spacing: normal;
+  white-space: nowrap;
   font-weight: 600;
 }
 .theme-option input:checked + .theme-option-card {

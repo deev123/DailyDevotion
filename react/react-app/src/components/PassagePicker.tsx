@@ -1,3 +1,5 @@
+import { referenceLabels } from "../features/bible/referenceLabels";
+import OverflowLabel from "./OverflowLabel";
 import { useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 
@@ -37,6 +39,8 @@ export default function PassagePicker({ references, value, onChange, formatRefer
         });
         return [...grouped.values()];
     }, [references, formatReference]);
+    const fullLabel = references[value] ? formatReference(references[value]) : "Select passage";
+    const compactLabels = useMemo(() => referenceLabels(fullLabel), [fullLabel]);
     const chapterOnly = books.length === 1;
     const selectedBook = books.find(book => book.chapters.some(chapter => chapter.index === value));
     const draftBook = books.find(book => book.name === bookName) ?? selectedBook ?? books[0];
@@ -68,9 +72,9 @@ export default function PassagePicker({ references, value, onChange, formatRefer
 
     return <>
         <button type="button" className="title-select picker-trigger"
-            disabled={!books.length} aria-haspopup="dialog" aria-expanded={open}
+            disabled={!books.length} aria-label={fullLabel} aria-haspopup="dialog" aria-expanded={open}
             aria-controls={`${id}-dialog`} onClick={show}>
-            <span>{references[value] ? formatReference(references[value]) : "Select passage"}</span>
+            <OverflowLabel text={fullLabel} variants={compactLabels} shrink />
             <span aria-hidden="true" className="material-icons">expand_more</span>
         </button>
         {createPortal(<dialog ref={dialogRef} id={`${id}-dialog`} className="dialog"

@@ -51,7 +51,7 @@ export default function TranslationPicker({ value, detail, onChange, className =
             return { value: version.id, label: title, group: language.label, groupKey: group, groupSearch: language.search };
         }).sort((a, b) => a.group.localeCompare(b.group) || a.label.localeCompare(b.label));
     }, [index, value, detail, names]);
-    return <ListPicker title="Select translation" allowEmpty groupTabs className={className} value={value}
+    return <ListPicker title="Select translation" allowEmpty groupTabs shrinkTriggerLabel className={className} value={value}
         triggerLabel={detail?.abbreviation || (value ? String(value) : "…")} options={options}
         onOpen={() => { void loadIndex(); }} onTabChange={tab => { if (tab === "language") void loadNames(); }} onChange={onChange}
         status={loading && !index.length ? <LoadingSkeleton variant="list" label="Loading translations…" /> : error ? <>{error} <button type="button" onClick={() => { void loadIndex(); }}>Retry</button></> : undefined} />;

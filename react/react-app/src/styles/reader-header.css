@@ -60,18 +60,15 @@
   width: auto;
   min-width: 0;
 }
-.integrated-passage-header .picker-trigger > span:first-child {
-  overflow-wrap: anywhere;
-  white-space: normal;
-}
 .integrated-passage-header .integrated-translation-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 1 auto;
-  min-width: 40px;
-  max-width: 64px;
-  min-height: 40px;
+  /* Keep fitting the abbreviation from changing its own available space. */
+  box-sizing: border-box;
+  flex: 0 0 64px;
+  width: 64px;
+  height: 40px;
   padding: 4px;
   border: 1px solid var(--border-subtle);
   border-radius: 6px;

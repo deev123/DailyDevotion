@@ -130,7 +130,8 @@ function SettingsSidebar({ onOpenChange, onNavigate, components }: { onOpenChang
             const section = document.getElementById(`contents-${component.id}`);
             const fallback = { passage2: "Passage", notebox: "Notes", videoPlaylist: "Video playlist", catechism: "Catechism", psalter: "Psalter", pdfReader: "PDF reader", audioPlayer: "Audio player", verseGame: "Verse Finder Game (experimental)", verseFlashcard: "Verse flashcard (experimental)" }[component.type];
             const selector = component.type === "notebox" ? ".notes-header h2" : component.type === "pdfReader" ? ".pdf-title-button" : ".passage-header .title-select > span:first-child";
-            const label = section?.querySelector(selector)?.textContent?.trim();
+            const labelElement = section?.querySelector(selector);
+            const label = (labelElement?.classList.contains("overflow-label") ? labelElement.getAttribute("title") : labelElement?.textContent)?.trim();
             return { id: component.id, label: label && label !== "Choose a PDF" && !label.startsWith("Select ") ? label : fallback };
         });
     }

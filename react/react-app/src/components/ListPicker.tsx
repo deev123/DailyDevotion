@@ -1,3 +1,4 @@
+import OverflowLabel from "./OverflowLabel";
 import { useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
@@ -12,6 +13,7 @@ type Props = {
     describedBy?: string;
     triggerIcon?: string;
     triggerLabel?: string;
+    shrinkTriggerLabel?: boolean;
     closeOnSelect?: boolean;
     groupTabs?: boolean;
     searchable?: boolean;
@@ -22,7 +24,7 @@ type Props = {
 };
 
 /** A flat list, or language-style accordion groups, with selection owned by the caller. */
-export default function ListPicker({ title, options, value, onChange, className = "title-select", disabled = false, describedBy, triggerIcon, triggerLabel, closeOnSelect = true, groupTabs = false, searchable = false, onOpen, onTabChange, status, allowEmpty = false }: Props) {
+export default function ListPicker({ title, options, value, onChange, className = "title-select", disabled = false, describedBy, triggerIcon, triggerLabel, shrinkTriggerLabel = false, closeOnSelect = true, groupTabs = false, searchable = false, onOpen, onTabChange, status, allowEmpty = false }: Props) {
     const id = useId();
     const dialogRef = useRef<HTMLDialogElement>(null);
     const [open, setOpen] = useState(false);
@@ -71,8 +73,8 @@ export default function ListPicker({ title, options, value, onChange, className 
         <button type="button" className={`${className} picker-trigger`}
             disabled={disabled || (!allowEmpty && !options.length)} aria-haspopup="dialog" aria-expanded={open}
             aria-controls={`${id}-dialog`} aria-describedby={describedBy} aria-label={`${title}: ${selected?.label ?? "None selected"}`} onClick={show}>
-            {triggerLabel !== undefined ? <span>{triggerLabel}</span> : triggerIcon ? <span className="material-icons" aria-hidden="true">{triggerIcon}</span> : <>
-                <span>{selected?.label ?? title}</span>
+            {triggerLabel !== undefined ? <OverflowLabel text={triggerLabel} shrink={shrinkTriggerLabel} /> : triggerIcon ? <span className="material-icons" aria-hidden="true">{triggerIcon}</span> : <>
+                <OverflowLabel text={selected?.label ?? title} />
                 <span className="material-icons" aria-hidden="true">expand_more</span>
             </>}
         </button>

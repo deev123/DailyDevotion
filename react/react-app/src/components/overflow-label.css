@@ -1,0 +1,32 @@
+.overflow-label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: inherit;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-align: inherit;
+}
+.overflow-label .overflow-label-text {
+  display: block;
+  max-width: 100%;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.overflow-label .overflow-label-measurements,
+.overflow-label .overflow-label-measurements > span {
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0;
+  width: max-content;
+  max-width: none;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: nowrap;
+  font-size: inherit;
+}
+.overflow-label-measurements > span::before { content: attr(data-label); }

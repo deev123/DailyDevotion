@@ -58,3 +58,7 @@
   color: var(--text);
 }
 
+
+.top-header > .streak-area, .top-header .hamburger-button { flex-shrink: 0; }
+.top-header .streak-pill { font-size: clamp(14px, .9rem, 22px); line-height: 1.2; }
+.top-header .streak-flame { font-size: 1em; }
