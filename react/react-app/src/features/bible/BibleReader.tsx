@@ -347,11 +347,11 @@ export default function BibleReader({ active }: { active: boolean }) {
             </div>
         )}
         <div ref={sentinel} className="bible-load-more">
+            {start > 0 && !infinite && <button type="button" onClick={() => navigate({ index: start - 1, verse: "1", offset: 130, version })}>Previous chapter</button>}
             {end < references.length - 1 ? <button type="button" onClick={() => {
                 if (infinite) setEnd(end + 1);
                 else navigate({ index: end + 1, verse: "1", offset: 130, version });
             }}>{infinite ? "Load next chapter" : "Next chapter"}</button> : references.length > 0 ? <p>End of the Bible</p> : null}
-            {start > 0 && !infinite && <button type="button" onClick={() => navigate({ index: start - 1, verse: "1", offset: 130, version })}>Previous chapter</button>}
         </div>
         <BibleSettingsDialog dialogRef={settingsDialog} infinite={infinite} onInfiniteChange={enabled => {
             window.dispatchEvent(new Event("reading-position-save"));
