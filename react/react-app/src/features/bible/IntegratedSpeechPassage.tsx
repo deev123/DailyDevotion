@@ -2,7 +2,8 @@ import { commentaryUrl } from "./bibleReference";
 import type { MenuOption } from "../../components/Menu.tsx" // import type important for importing types
 import Menu from "../../components/Menu.tsx"
 import PassagePicker from "../../components/PassagePicker.tsx"
-import ListPicker from "../../components/ListPicker.tsx"
+import TranslationPicker from "./TranslationPicker"
+import { useBibleMetadata } from "./useBibleMetadata"
 import type { PlayerState } from "../speech/SpeechPassage.tsx"
 import SpeechPassage from "../speech/SpeechPassage.tsx"
 import { useState, useEffect, useRef } from "react"
@@ -71,16 +72,12 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
     let [listElements, setListElements] = useState<string[]>([]);
     let [html, setHtml] = useState("");
     let [error, setError] = useState("");
-    const [unavailablePassages, setUnavailablePassages] = useState<Set<string>>(() => new Set());
     let [checkboxChecked, setCheckboxChecked] = useState(false);
 
-    // bible version selection
-    let [versions, setVersions] = useState<{id: number, abbreviation: string, title: string, languageTag: string, languageName: string, languageGroup: string, languageSearch: string, books: string[] | null}[]>([]);
-    const [versionId, setVersionId] = useState<number | null>(null);
-    // copyright notice for the selected version
-    let [copyright, setCopyright] = useState("");
-    // localized book titles for the selected version: USFM code -> localized title e.g. GEN -> Génesis
-    let [bookTitles, setBookTitles] = useState<Map<string, string>>(new Map());
+    // A saved translation can be read immediately, without a catalogue request.
+    const [versionId, setVersionId] = useState<number | null>(() => YouVersionAPI.readSavedVersion(id + "_version") ?? YouVersionAPI.readSavedVersion("defaultBibleVersion"));
+    const [attempt, setAttempt] = useState(0);
+    const metadata = useBibleMetadata(versionId);
 
     function saveIndex(val: number) {
         // A reading position belongs only to the chapter it was saved for.
@@ -140,7 +137,7 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
     // produce a localized label for a reading list entry like "1 John 3".
     // resolves the English book name to its localized title in the selected version.
     function localizedLabel(reference: string): string {
-        if (bookTitles.size === 0) return reference;
+        if (!metadata.titles?.size) return reference;
 
         const match = reference.trim().match(/^(.+?)\s+(\d+)$/);
         if (!match) return reference;
@@ -150,7 +147,7 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
 
         const bookCode = usfm.split(".")[0];
         const chapter = match[2];
-        const localized = bookTitles.get(bookCode);
+        const localized = metadata.titles.get(bookCode);
         if (!localized) return reference;
 
         return `${localized} ${chapter}`;
@@ -166,55 +163,17 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
         load();
     },[]);
 
-    // load index and version from local store when created
+    useEffect(() => { loadIndex(); }, []);
     useEffect(() => {
-        loadIndex();
-
-        async function loadVersion() {
-            const savedVersion = localStorage.getItem(id + "_version");
-            let stored = 0;
-            try { stored = Number.parseInt(JSON.parse(savedVersion ?? "null")); } catch { /* Use the normal fallback. */ }
-            const defaultVersion = Number(localStorage.getItem("defaultBibleVersion"));
-            const available = await YouVersionAPI.fetchVersions();
-            setVersions(available);
-
-            if (available.length === 0) return;
-
-            // Saved choices take precedence, including those made before the rename.
-            if (stored && available.some((v) => v.id === stored)) {
-                setVersionId(stored);
-            } else {
-                // Prefer BSB only for a reader with no saved translation.
-                const berean = available.find((v) =>
-                    v.abbreviation.toUpperCase() === "BSB" ||
-                    v.title.toLowerCase() === "berean standard bible"
-                );
-                const fallback = (savedVersion === null ? available.find(v => v.id === defaultVersion) ?? berean : undefined) ?? available.find(v => v.languageTag === "en") ?? available[0];
-                setVersionId(fallback.id);
-                saveVersion(fallback.id);
-            }
-        }
-        loadVersion();
-    },[]);
-
-    // load the copyright notice and localized book titles whenever the selected version changes
-    useEffect(() => {
+        if (versionId) { saveVersion(versionId); return; }
         let cancelled = false;
-        async function loadVersionData() {
-            if (!versionId) return;
-            const [detail, titles] = await Promise.all([
-                YouVersionAPI.fetchVersionDetail(versionId),
-                YouVersionAPI.fetchBookTitles(versionId),
-            ]);
-            if (cancelled) return;
-            setCopyright(detail?.copyright ?? "");
-            setBookTitles(titles);
-        }
-        setCopyright("");
-        setBookTitles(new Map());
-        loadVersionData();
+        const saved = YouVersionAPI.readSavedVersion(id + "_version") ?? YouVersionAPI.readSavedVersion("defaultBibleVersion");
+        const request = saved ? Promise.resolve(saved) : YouVersionAPI.fetchDefaultVersion();
+        request.then(next => {
+            if (!cancelled) { setVersionId(next); saveVersion(next); }
+        }).catch(() => { if (!cancelled) setError("Could not load a default translation. Please retry."); });
         return () => { cancelled = true; };
-    }, [versionId]);
+    }, [versionId, attempt]);
 
     // query the chapter html when selection, list or version changes
     useEffect(() => {
@@ -233,22 +192,15 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
                 return;
             }
 
-            const selectedBooks = versions.find(version => version.id === versionId)?.books;
-            if (selectedBooks && !selectedBooks.includes(usfm.split(".")[0])) {
-                setError("This book is not available in the selected translation. Try another passage or translation.");
-                return;
-            }
-
             setError("");
             const result = await YouVersionAPI.fetchChapterHtml(versionId, usfm);
             if (cancelled) return;
-            if (result.unavailable) setUnavailablePassages(previous => new Set(previous).add(`${versionId}:${usfm}`));
             setHtml(result.html);
             setError(result.error);
         }
         loadChapter();
         return () => { cancelled = true; };
-    }, [index, listElements, versionId, versions]);
+    }, [index, listElements, versionId, attempt]);
 
     function onVersionChange(val: number) {
         if (val !== versionId) prepareChapterChange();
@@ -271,28 +223,11 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
                     setIndex(nextIndex);
                     saveIndex(nextIndex);
                 }}
-                formatReference={localizedLabel}
+                formatReference={localizedLabel} onOpen={metadata.loadBookNames}
             />
-            {versions.length > 0 &&
-                <ListPicker
-                    title="Select translation"
-                    groupTabs
-                    className="integrated-translation-button"
-                    triggerLabel={versions.find(version => version.id === versionId)?.abbreviation || "…"}
-                    options={versions.map(version => ({
-                        value: version.id,
-                        label: `${version.abbreviation} — ${version.title}${version.books && reference && YouVersionAPI.referenceToUsfm(reference) && !version.books.includes(YouVersionAPI.referenceToUsfm(reference)!.split(".")[0]) ? " (book unavailable)" : reference && unavailablePassages.has(`${version.id}:${YouVersionAPI.referenceToUsfm(reference)}`) ? " (passage unavailable)" : ""}`,
-                        group: version.languageName,
-                        groupKey: version.languageGroup,
-                        groupSearch: version.languageSearch,
-                    }))}
-                    value={versionId}
-                    onChange={onVersionChange}
-                    disabled={versionId === null}
-                />
-            }
+            <TranslationPicker value={versionId} detail={metadata.detail} onChange={onVersionChange} />
             <div className="integrated-player-trigger" ref={setPlayerTriggerContainer}>
-                {(!html || !!error) && <button type="button" className="player-icon-button" aria-label="Read aloud unavailable while passage loads" disabled>
+                {(!html || !!error || !metadata.detail) && <button type="button" className="player-icon-button" aria-label="Read aloud unavailable while passage loads" disabled>
                     <span className="material-icons" aria-hidden="true">volume_up</span>
                 </button>}
             </div>
@@ -303,15 +238,16 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
             </div>
         </div>
         <div className="passage-body">
-            {error ? <p className="passage-error">{error}</p>
-             : html ? <SpeechPassage key={`${index}-${versionId}`} html={html} id={id} passageKey={`${reference}|${versionId}`} passageIndex={index} playerTriggerContainer={playerTriggerContainer} stopPlayerRef={stopPlayerRef}
+            {error ? <div className="passage-error" role="alert"><p>{error}</p><button type="button" onClick={() => setAttempt(previous => previous + 1)}>Retry</button></div>
+             : html && metadata.detail ? <SpeechPassage key={`${index}-${versionId}`} html={html} id={id} passageKey={`${reference}|${versionId}`} passageIndex={index} playerTriggerContainer={playerTriggerContainer} stopPlayerRef={stopPlayerRef}
                  initialOpen={resumePlayer.open} autoPlay={resumePlayer.playing} autoPlayGeneration={resumePlayer.generation}
                  onContinueChapter={continueToNextChapter}
                  onPlayerStateChange={state => { playerState.current = state; }}
-                 language={versions.find(version => version.id === versionId)?.languageTag || "en"} /> : <p>...</p>}
+                 language={metadata.detail?.languageTag || "und"} /> : html ? <div className="speech-integrated-text" dangerouslySetInnerHTML={{ __html: html }} /> : <p>...</p>}
+            {!error && metadata.failed && <p className="passage-error" role="status">Translation details could not be loaded. Read aloud is unavailable until they load. <button type="button" onClick={metadata.retry}>Retry details</button></p>}
         </div>
-        {copyright &&
-            <div className="passage-copyright">{copyright}</div>
+        {metadata.detail?.copyright &&
+            <div className="passage-copyright">{metadata.detail.copyright}</div>
         }
         {commentary &&
             <div className="passage-commentary">

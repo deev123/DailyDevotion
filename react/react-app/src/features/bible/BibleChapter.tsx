@@ -1,7 +1,8 @@
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import PassagePicker from "../../components/PassagePicker";
-import ListPicker from "../../components/ListPicker";
+import TranslationPicker from "./TranslationPicker";
+import { useBibleMetadata } from "./useBibleMetadata";
 import SpeechPassage, { type PlayerState } from "../speech/SpeechPassage";
 import YouVersionAPI from "./YouVersionAPI";
 import { commentaryUrl } from "./bibleReference";
@@ -33,55 +34,40 @@ export default function BibleChapter({ id, references, reader }: { id: string; r
     const section = useRef<HTMLElement>(null);
     const stopPlayer = useRef<(() => void) | null>(null);
     const [trigger, setTrigger] = useState<HTMLDivElement | null>(null);
-    const [versions, setVersions] = useState<Awaited<ReturnType<typeof YouVersionAPI.fetchVersions>>>([]);
-    const [content, setContent] = useState({ key: "", html: "", error: "" });
-    const [metadata, setMetadata] = useState({ version: 0, copyright: "", titles: new Map<string, string>() });
+    const [content, setContent] = useState<{ key: string; html: string; error: string; reference?: string }>({ key: "", html: "", error: "" });
+    const [attempt, setAttempt] = useState(0);
+    const [versionError, setVersionError] = useState("");
+    const metadata = useBibleMetadata(version);
     const html = content.key === passageKey ? content.html : "";
-    const error = content.key === passageKey ? content.error : "";
-    const ready = !!html && metadata.version === version;
-    const chooseInitialVersion = useEffectEvent((available: typeof versions) => {
-        if (reader.version || !available.length) return;
-        const preferred = Number(localStorage.getItem("defaultBibleVersion"));
-        const fallback = available.find(v => v.id === preferred) ?? available.find(v => v.abbreviation.toUpperCase() === "BSB")
-            ?? available.find(v => v.languageTag === "en") ?? available[0];
-        reader.onVersion(fallback.id);
-    });
+    const error = (!version ? versionError : "") || (content.key === passageKey ? content.error : "");
+    const ready = !!html;
+    const chooseInitialVersion = useEffectEvent((next: number) => { if (!reader.version) reader.onVersion(next); });
     useEffect(() => {
+        if (version) return;
         let cancelled = false;
-        YouVersionAPI.fetchVersions().then(available => {
-            if (cancelled) return;
-            setVersions(available);
-            chooseInitialVersion(available);
-        });
+        const saved = YouVersionAPI.readSavedVersion("defaultBibleVersion");
+        const request = saved ? Promise.resolve(saved) : YouVersionAPI.fetchDefaultVersion();
+        request.then(next => { if (!cancelled) { setVersionError(""); chooseInitialVersion(next); } })
+            .catch(() => { if (!cancelled) setVersionError("Could not load a default translation. Please retry."); });
         return () => { cancelled = true; };
-    }, []);
+    }, [version, attempt]);
 
     useEffect(() => {
-        if (!version) return;
-        let cancelled = false;
-        Promise.all([YouVersionAPI.fetchVersionDetail(version), YouVersionAPI.fetchBookTitles(version)]).then(([detail, titles]) => {
-            if (!cancelled) setMetadata({ version, copyright: detail?.copyright ?? "", titles });
-        });
-        return () => { cancelled = true; };
-    }, [version]);
-
-    useEffect(() => {
-        if (!version || !reference || !versions.length) return;
+        if (!version || !reference) return;
         let cancelled = false;
         const usfm = YouVersionAPI.referenceToUsfm(reference);
-        const books = versions.find(v => v.id === version)?.books;
         async function load() {
             if (!version) return;
-            if (!usfm || (books && !books.includes(usfm.split(".")[0]))) {
+            if (!usfm) {
                 setContent({ key: passageKey, html: "", error: "This book is not available in the selected translation. Try another passage or translation." });
                 return;
             }
             const result = await YouVersionAPI.fetchChapterHtml(version, usfm);
-            if (!cancelled) setContent({ key: passageKey, html: result.html, error: result.error });
+            if (!cancelled) setContent({ key: passageKey, html: result.html, error: result.error, reference: result.reference });
         }
         void load();
         return () => { cancelled = true; };
-    }, [version, reference, passageKey, versions]);
+    }, [version, reference, passageKey, attempt]);
 
     useEffect(() => {
         if (!reader.headerContainer || !section.current) return;
@@ -100,28 +86,24 @@ export default function BibleChapter({ id, references, reader }: { id: string; r
 
     function label(value: string) {
         const code = YouVersionAPI.referenceToUsfm(value)?.split(".")[0];
-        const title = metadata.version === version && code ? metadata.titles.get(code) : null;
+        const title = code ? metadata.titles?.get(code) : null;
+        if (value === reference && content.key === passageKey && content.reference) return content.reference;
         return title ? `${title} ${value.match(/\d+$/)?.[0] ?? ""}` : value;
     }
     const { bodyRef, ...swipeHandlers } = useBibleChapterSwipe({
         index, count: references.length, enabled: !!html || !!error, direction: reader.swipeDirection ?? 0,
         onNavigate: reader.onSwipe,
     });
-    const selected = versions.find(v => v.id === version);
     const commentary = commentaryUrl(reference);
     const header = <div className="passage-header integrated-passage-header">
-        <PassagePicker references={references} value={index} onChange={reader.onNavigate} formatReference={label} />
-        <ListPicker title="Select translation" groupTabs className="integrated-translation-button"
-            triggerLabel={selected?.abbreviation ?? "…"} value={version} disabled={!versions.length}
-            options={versions.map(v => ({ value: v.id, label: `${v.abbreviation} — ${v.title}`,
-                group: v.languageName, groupKey: v.languageGroup, groupSearch: v.languageSearch }))}
-            onChange={next => {
-                stopPlayer.current?.();
-                reader.onVersion(next);
-                localStorage.setItem("defaultBibleVersion", String(next));
-            }} />
+        <PassagePicker references={references} value={index} onChange={reader.onNavigate} formatReference={label} onOpen={metadata.loadBookNames} />
+        <TranslationPicker value={version} detail={metadata.detail} onChange={next => {
+            stopPlayer.current?.();
+            reader.onVersion(next);
+            localStorage.setItem("defaultBibleVersion", String(next));
+        }} />
         <div className="integrated-player-trigger" ref={setTrigger}>
-            {!html && <button type="button" className="player-icon-button" aria-label="Read aloud unavailable while passage loads" disabled>
+            {(!html || !metadata.detail) && <button type="button" className="player-icon-button" aria-label="Read aloud unavailable while passage loads" disabled>
                 <span className="material-icons" aria-hidden="true">volume_up</span>
             </button>}
         </div>
@@ -130,8 +112,8 @@ export default function BibleChapter({ id, references, reader }: { id: string; r
         {reader.headerActive && reader.headerContainer && createPortal(header, reader.headerContainer)}
         <div ref={bodyRef} className="passage-body">
             <h2 className="bible-chapter-title">{label(reference)}</h2>
-            {error ? <p className="passage-error" role="alert">{error}</p> : html ? <SpeechPassage
-                key={passageKey} id={id} html={html} language={selected?.languageTag ?? "en"}
+            {error ? <div className="passage-error" role="alert"><p>{error}</p><button type="button" onClick={() => setAttempt(previous => previous + 1)}>Retry</button></div> : html && metadata.detail ? <SpeechPassage
+                key={passageKey} id={id} html={html} language={metadata.detail?.languageTag || "en"}
                 passageKey={`${reference}|${version}`} playerContainer={reader.playerContainer} playerActive={reader.playerActive}
                 playerLabel={label(reference)} onPlayerOpen={reader.onPlayerOpen} onPlaybackStart={reader.onPlayerOpen}
                 playerTriggerContainer={trigger} stopPlayerRef={stopPlayer}
@@ -140,9 +122,10 @@ export default function BibleChapter({ id, references, reader }: { id: string; r
                     if (!isCurrent() || index + 1 >= references.length) return false;
                     reader.onContinue(index + 1, generation);
                     return true;
-                }} /> : <p role="status">Loading chapter…</p>}
+                }} /> : html ? <div className="speech-integrated-text" dangerouslySetInnerHTML={{ __html: html }} /> : <p role="status">Loading chapter…</p>}
+            {!error && metadata.failed && <p className="passage-error" role="status">Translation details could not be loaded. Read aloud is unavailable until they load. <button type="button" onClick={metadata.retry}>Retry details</button></p>}
         </div>
-        {metadata.version === version && metadata.copyright && <div className="passage-copyright">{metadata.copyright}</div>}
+        {metadata.detail?.copyright && <div className="passage-copyright">{metadata.detail.copyright}</div>}
         {commentary && <div className="passage-commentary"><a href={commentary} target="_blank" rel="noopener noreferrer">
             Matthew Henry commentary — {label(reference)} (opens in a new tab)
         </a></div>}

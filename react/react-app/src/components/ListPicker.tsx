@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from "react";
+import { useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 type Option = { value: number; label: string; group?: string; groupKey?: string; groupSearch?: string };
@@ -15,10 +15,14 @@ type Props = {
     closeOnSelect?: boolean;
     groupTabs?: boolean;
     searchable?: boolean;
+    onOpen?: () => void;
+    onTabChange?: (tab: "language" | "translation") => void;
+    status?: ReactNode;
+    allowEmpty?: boolean;
 };
 
 /** A flat list, or language-style accordion groups, with selection owned by the caller. */
-export default function ListPicker({ title, options, value, onChange, className = "title-select", disabled = false, describedBy, triggerIcon, triggerLabel, closeOnSelect = true, groupTabs = false, searchable = false }: Props) {
+export default function ListPicker({ title, options, value, onChange, className = "title-select", disabled = false, describedBy, triggerIcon, triggerLabel, closeOnSelect = true, groupTabs = false, searchable = false, onOpen, onTabChange, status, allowEmpty = false }: Props) {
     const id = useId();
     const dialogRef = useRef<HTMLDialogElement>(null);
     const [open, setOpen] = useState(false);
@@ -41,8 +45,12 @@ export default function ListPicker({ title, options, value, onChange, className 
         setSearch("");
         setOpen(true);
         dialogRef.current?.showModal();
+        onOpen?.();
     }
 
+    const activeGroup = groups.has(expandedGroup ?? "") ? expandedGroup : selected?.groupKey || selected?.group || groups.keys().next().value || null;
+
+    function changeTab(next: "language" | "translation") { setTab(next); onTabChange?.(next); }
     function close() {
         dialogRef.current?.close();
         setOpen(false);
@@ -61,7 +69,7 @@ export default function ListPicker({ title, options, value, onChange, className 
 
     return <>
         <button type="button" className={`${className} picker-trigger`}
-            disabled={disabled || !options.length} aria-haspopup="dialog" aria-expanded={open}
+            disabled={disabled || (!allowEmpty && !options.length)} aria-haspopup="dialog" aria-expanded={open}
             aria-controls={`${id}-dialog`} aria-describedby={describedBy} aria-label={`${title}: ${selected?.label ?? "None selected"}`} onClick={show}>
             {triggerLabel !== undefined ? <span>{triggerLabel}</span> : triggerIcon ? <span className="material-icons" aria-hidden="true">{triggerIcon}</span> : <>
                 <span>{selected?.label ?? title}</span>
@@ -82,6 +90,7 @@ export default function ListPicker({ title, options, value, onChange, className 
                 <h2 id={`${id}-title`}>{title}</h2>
                 <button type="button" className="dialog-close" aria-label={`Close ${title.toLowerCase()}`} onClick={close}>×</button>
             </div>
+            {status && <div className="picker-status" role="status">{status}</div>}
             {groupTabs && grouped && <div className="passage-picker-tabs" role="tablist" aria-label="Translation selection">
                 {(["language", "translation"] as const).map(item => <button key={item} type="button" role="tab" id={`${id}-${item}-tab`}
                     aria-selected={tab === item} aria-controls={`${id}-${item}-panel`} tabIndex={tab === item ? 0 : -1}
@@ -89,9 +98,9 @@ export default function ListPicker({ title, options, value, onChange, className 
                         if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
                         event.preventDefault();
                         const next = event.key === "Home" ? "language" : event.key === "End" ? "translation" : tab === "language" ? "translation" : "language";
-                        setTab(next);
+                        changeTab(next);
                         document.getElementById(`${id}-${next}-tab`)?.focus();
-                    }} onClick={() => setTab(item)}>{item === "language" ? "Language" : "Translation"}</button>)}
+                    }} onClick={() => changeTab(item)}>{item === "language" ? "Language" : "Translation"}</button>)}
             </div>}
             {groupTabs && grouped ? <>
                 <div className="dialog-panel" role="tabpanel" id={`${id}-language-panel`} aria-labelledby={`${id}-language-tab`} hidden={tab !== "language"}>
@@ -102,8 +111,8 @@ export default function ListPicker({ title, options, value, onChange, className 
                         </button>)}</div>
                 </div>
                 <div className="dialog-panel" role="tabpanel" id={`${id}-translation-panel`} aria-labelledby={`${id}-translation-tab`} hidden={tab !== "translation"}>
-                    <p className="passage-picker-book-name">{groups.get(expandedGroup || "")?.[0]?.group ?? expandedGroup}</p>
-                    {renderOptions(groups.get(expandedGroup || "") ?? [])}
+                    <p className="passage-picker-book-name">{groups.get(activeGroup || "")?.[0]?.group ?? activeGroup}</p>
+                    {renderOptions(groups.get(activeGroup || "") ?? [])}
                 </div>
             </> : <div className="dialog-panel">
                 {searchable && <input className="language-search" type="search" aria-label={`Search ${title.toLowerCase()}`} placeholder="Search" value={search} onChange={event => setSearch(event.target.value)} />}

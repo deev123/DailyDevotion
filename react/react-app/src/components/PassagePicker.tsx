@@ -7,12 +7,13 @@ type Props = {
     onChange: (index: number) => void;
     formatReference?: (reference: string) => string;
     portalTarget?: HTMLElement | null;
+    onOpen?: () => void;
 };
 
 type Book = { name: string; label: string; chapters: { number: string; index: number }[] };
 
 /** Selects from a reader's chapter list, leaving loading and persistence to the reader. */
-export default function PassagePicker({ references, value, onChange, formatReference = reference => reference, portalTarget }: Props) {
+export default function PassagePicker({ references, value, onChange, formatReference = reference => reference, portalTarget, onOpen }: Props) {
     const id = useId();
     const dialogRef = useRef<HTMLDialogElement>(null);
     const chapterPanelRef = useRef<HTMLDivElement>(null);
@@ -45,6 +46,7 @@ export default function PassagePicker({ references, value, onChange, formatRefer
         setTab(chapterOnly ? "chapter" : "book");
         setOpen(true);
         dialogRef.current?.showModal();
+        onOpen?.();
         (chapterOnly ? chapterPanelRef : bookTabRef).current?.focus();
     }
 

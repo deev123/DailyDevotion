@@ -2,6 +2,7 @@ import { BibleHistoryDialog, BibleSettingsDialog } from "./BibleReaderDialogs";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { PlayerState } from "../speech/SpeechPassage";
 import BibleChapter from "./BibleChapter";
+import YouVersionAPI from "./YouVersionAPI";
 import { BIBLE_STORAGE_KEY, parseBibleState, updateHistory, type ReadingPosition } from "./readingHistory";
 
 // The API's original verse wrappers survive the integrated speech markup.
@@ -15,7 +16,14 @@ function verseNumber(element: HTMLElement): string | null {
 }
 
 export default function BibleReader({ active }: { active: boolean }) {
-    const [initial] = useState(() => parseBibleState(localStorage.getItem(BIBLE_STORAGE_KEY)));
+    const [initial] = useState(() => {
+        const saved = parseBibleState(localStorage.getItem(BIBLE_STORAGE_KEY));
+        if (!saved.current.version) {
+            saved.current = { ...saved.current, version: YouVersionAPI.readSavedVersion("defaultBibleVersion") };
+            saved.history = updateHistory(saved.history, saved.current, false);
+        }
+        return saved;
+    });
     const state = useRef(initial);
     const [start, setStart] = useState(initial.current.index);
     const [currentIndex, setCurrentIndex] = useState(initial.current.index);

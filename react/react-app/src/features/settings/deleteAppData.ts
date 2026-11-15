@@ -21,6 +21,7 @@ export async function deleteAppData(): Promise<void> {
     for (let index = 0; index < localStorage.length; index++) {
         const key = localStorage.key(index);
         if (!key) continue;
+        if (key.startsWith("bibleApiCache:")) keys.add(key);
         for (const suffix of componentSuffixes) {
             if (!key.endsWith(suffix)) continue;
             const id = key.slice(0, -suffix.length);

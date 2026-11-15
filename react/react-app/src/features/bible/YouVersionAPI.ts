@@ -1,7 +1,9 @@
+import { RequestCache } from "./apiCache";
+
 // YouVersion Platform API wrapper
 // docs: https://developers.youversion.com/api/bibles
 
-type BibleVersion = {
+export type BibleVersion = {
     id: number,
     abbreviation: string,
     title: string,
@@ -12,7 +14,7 @@ type BibleVersion = {
     books: string[] | null
 }
 
-type BibleVersionDetail = {
+export type BibleVersionDetail = {
     id: number,
     abbreviation: string,
     title: string,
@@ -28,12 +30,69 @@ class YouVersionAPI {
 
     static BASE_URL = "https://api.youversion.com/v1";
 
-    // cache for the version list so it is only fetched once per session
-    static versionsCache: BibleVersion[] | null = null;
-    static versionsRequest: Promise<BibleVersion[]> | null = null;
+    static REQUEST_TIMEOUT_MS = 12000;
+    private static catalog = new RequestCache<BibleVersion[]>(8, 60 * 60 * 1000);
+    private static details = new RequestCache<BibleVersionDetail>(16, 24 * 60 * 60 * 1000);
+    private static titles = new RequestCache<Map<string, string>>(16, 24 * 60 * 60 * 1000);
+    private static chapters = new RequestCache<{ ok: boolean; html: string; error: string; reference?: string }>(40, 24 * 60 * 60 * 1000);
+    private static languages = new RequestCache<Map<string, Record<string, string>>>(1, 24 * 60 * 60 * 1000);
 
-    // cache of per-version detail (copyright) keyed by version id
-    static versionDetailCache: Map<number, BibleVersionDetail> = new Map();
+    private static async request(path: string): Promise<Response> {
+        return fetch(this.BASE_URL + path, {
+            headers: { Accept: "application/json", "X-YVP-App-Key": this.APP_KEY },
+            signal: AbortSignal.timeout(this.REQUEST_TIMEOUT_MS),
+        });
+    }
+
+    static readSavedVersion(key: string): number | null {
+        try {
+            const stored: unknown = JSON.parse(localStorage.getItem(key) ?? "null");
+            if (typeof stored !== "number" && (typeof stored !== "string" || !/^\d+$/.test(stored))) return null;
+            const value = Number(stored);
+            return Number.isSafeInteger(value) && value > 0 ? value : null;
+        } catch { return null; }
+    }
+
+    private static version(value: Record<string, unknown>): BibleVersion {
+        const legacyLanguage = value.language && typeof value.language === "object" ? value.language as Record<string, unknown> : {};
+        const languageTag = String(value.language_tag || legacyLanguage.iso_639_1 || "");
+        const parts = languageTag.split("-");
+        const script = parts.find(part => /^[a-z]{4}$/i.test(part));
+        const languageGroup = parts[0].toLowerCase() + (script ? `-${script}` : "");
+        return { id: Number(value.id), abbreviation: String(value.abbreviation ?? ""),
+            title: String(value.localized_title || value.title || value.abbreviation || `Bible ${value.id}`),
+            languageTag, languageGroup: languageGroup || "und", languageName: languageGroup || "Other", languageSearch: languageTag,
+            books: Array.isArray(value.books) ? value.books.filter((book): book is string => typeof book === "string") : null };
+    }
+
+    static fetchDefaultVersion(): Promise<number> {
+        return this.catalog.get("default-en", async () => this.loadVersions("en")).then(async versions => {
+            const chosen = versions.find(v => v.abbreviation.toUpperCase() === "BSB") ?? versions[0] ?? (await this.fetchVersionIndex())[0];
+            if (!chosen) throw new Error("No translations are available. Open the translation selector to choose one.");
+            return chosen.id;
+        });
+    }
+
+    /** Compact catalogue for the selector, never a prerequisite for reading. */
+    static fetchVersionIndex(): Promise<BibleVersion[]> {
+        return this.catalog.get("index", async () => {
+            const response = await this.request("/bibles?language_ranges[]=*&page_size=*&fields[]=id&fields[]=localized_title&fields[]=language_tag");
+            if (!response.ok) throw new Error(`Could not load translations (${response.status}).`);
+            if (response.status === 204) throw new Error("No translations are currently available.");
+            const data = await response.json();
+            if (!Array.isArray(data.data) || !data.data.length) throw new Error("No translations are currently available.");
+            return data.data.map((value: Record<string, unknown>) => this.version(value));
+        });
+    }
+
+    static fetchLanguageNames(): Promise<Map<string, Record<string, string>>> {
+        return this.languages.get("names", async () => {
+            const response = await this.request("/languages?bibles_available=true&page_size=*&fields[]=id&fields[]=display_names");
+            if (!response.ok) throw new Error("Could not load language names.");
+            const data = response.status === 204 ? { data: [] } : await response.json();
+            return new Map((data.data ?? []).map((item: { id: string; display_names?: Record<string, string> }) => [item.id.toLowerCase(), item.display_names ?? {}]));
+        });
+    }
 
     // USFM book codes keyed by the book names used in the reading lists
     static BOOK_CODES: Record<string, string> = {
@@ -119,176 +178,95 @@ class YouVersionAPI {
         return `${bookCode}.${chapter}`;
     }
 
-    // The wildcard returns the Bibles available to this app across languages.
+    // Legacy catalogue consumers retain their complete translation records.
     static async fetchVersions(): Promise<BibleVersion[]> {
-        if (this.versionsCache) return this.versionsCache;
-        if (this.versionsRequest) return this.versionsRequest;
-        this.versionsRequest = this.loadVersions();
-        try { return await this.versionsRequest; }
-        finally { this.versionsRequest = null; }
+        try { return await this.catalog.get("full", () => this.loadVersions("*")); }
+        catch { return []; }
     }
 
-    private static async loadVersions(): Promise<BibleVersion[]> {
-        try {
-            const byId = new Map<number, BibleVersion>();
-            // Language metadata supplies endonyms even where the browser's locale data does not.
-            const namesPromise = fetch(`${this.BASE_URL}/languages?bibles_available=true&page_size=*&fields[]=id&fields[]=display_names`, {
-                headers: { "Accept": "application/json", "X-YVP-App-Key": this.APP_KEY }
-            }).then(async response => response.ok && response.status !== 204 ? (await response.json()).data : []).catch(() => []);
-
-            let pageToken = "";
-            do {
-                const url = `${this.BASE_URL}/bibles?language_ranges[]=*&page_size=99${pageToken ? `&page_token=${encodeURIComponent(pageToken)}` : ""}`;
-                const response = await fetch(url, {
-                    headers: {
-                        "Accept": "application/json",
-                        "X-YVP-App-Key": this.APP_KEY
-                    }
-                });
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch versions (${response.status})`);
-                }
-                if (response.status === 204) break;
-
-                const data = await response.json();
-
-                for (const v of data.data as { id: number; abbreviation: string; localized_title?: string; title: string; language_tag?: string; language?: { iso_639_1?: string }; books?: unknown }[]) {
-                    const languageTag = v.language_tag ?? v.language?.iso_639_1 ?? "";
-                    const parts = languageTag.split("-");
-                    const baseLanguage = parts[0].toLowerCase();
-                    const script = parts.find((part: string) => /^[a-z]{4}$/i.test(part));
-                    const languageGroup = baseLanguage + (script ? `-${script}` : "");
-                    byId.set(v.id, {
-                        id: v.id,
-                        abbreviation: v.abbreviation,
-                        title: v.localized_title ?? v.title,
-                        languageTag,
-                        languageName: languageGroup || "Other",
-                        languageGroup: languageGroup || "und",
-                        languageSearch: languageTag,
-                        books: Array.isArray(v.books) ? v.books.filter((book: unknown): book is string => typeof book === "string") : null
-                    });
-                }
-                pageToken = data.next_page_token || "";
-            } while (pageToken);
-
-            const languageData: { id: string; display_names?: Record<string, string> }[] = await namesPromise;
-            const names = new Map(languageData.map(item => [item.id.toLowerCase(), item.display_names ?? {}]));
-            for (const version of byId.values()) {
-                const base = version.languageGroup.split("-")[0];
-                const displayNames = names.get(version.languageGroup.toLowerCase()) ?? names.get(base) ?? {};
-                let native: string | undefined = displayNames[version.languageGroup] ?? displayNames[base];
-                let english = displayNames.en ?? "";
+    private static async loadVersions(language: string): Promise<BibleVersion[]> {
+        const versions: BibleVersion[] = [];
+        let token = "";
+        do {
+            const response = await this.request(`/bibles?language_ranges[]=${encodeURIComponent(language)}&page_size=99${token ? `&page_token=${encodeURIComponent(token)}` : ""}`);
+            if (!response.ok) throw new Error(`Could not load translations (${response.status}).`);
+            if (response.status === 204) break;
+            const data = await response.json();
+            versions.push(...(data.data ?? []).map((value: Record<string, unknown>) => this.version(value)));
+            token = data.next_page_token ?? "";
+        } while (token);
+        const labels = new Map<string, { native: string; english: string }>();
+        for (const version of versions) {
+            if (!labels.has(version.languageGroup)) {
+                let native = version.languageGroup, english = native;
                 try {
-                    native ||= new Intl.DisplayNames([version.languageGroup], { type: "language" }).of(version.languageGroup);
-                    english ||= new Intl.DisplayNames(["en"], { type: "language" }).of(version.languageGroup) ?? "";
-                } catch { /* Use the code if no name is available. */ }
-                version.languageName = native || english || version.languageGroup;
-                version.languageSearch = `${version.languageTag} ${english}`;
+                    native = new Intl.DisplayNames([version.languageGroup], { type: "language" }).of(version.languageGroup) ?? native;
+                    english = new Intl.DisplayNames(["en"], { type: "language" }).of(version.languageGroup) ?? english;
+                } catch { /* Display a language code when the browser lacks its name. */ }
+                labels.set(version.languageGroup, { native, english });
             }
-
-            // group by language so optgroups stay together, then sort within each language
-            const versions = [...byId.values()].sort((a, b) => {
-                const langCmp = a.languageName.localeCompare(b.languageName);
-                if (langCmp !== 0) return langCmp;
-                return a.title.localeCompare(b.title);
-            });
-            this.versionsCache = versions;
-            return versions;
+            const label = labels.get(version.languageGroup)!;
+            version.languageName = label.native;
+            version.languageSearch = `${version.languageTag} ${label.english}`;
         }
-        catch (err) {
-            console.error("YouVersionAPI versions error:", err);
-            return [];
-        }
+        return versions.sort((a, b) => a.languageName.localeCompare(b.languageName) || a.title.localeCompare(b.title));
     }
 
-    // fetch the detail (including copyright) for a single bible version
     static async fetchVersionDetail(bibleId: number): Promise<BibleVersionDetail | null> {
-        if (this.versionDetailCache.has(bibleId)) return this.versionDetailCache.get(bibleId)!;
-
         try {
-            const url = `${this.BASE_URL}/bibles/${bibleId}`;
-            const response = await fetch(url, {
-                headers: {
-                    "Accept": "application/json",
-                    "X-YVP-App-Key": this.APP_KEY
-                }
+            return await this.details.get(String(bibleId), async () => {
+                const response = await this.request(`/bibles/${bibleId}`);
+                if (!response.ok) throw new Error("Could not load translation details.");
+                const value = await response.json();
+                if (Number(value.id) !== bibleId || typeof value.abbreviation !== "string" ||
+                    (typeof value.localized_title !== "string" && typeof value.title !== "string")) throw new Error("Invalid translation details.");
+                const languageTag = value.language_tag || value.language?.iso_639_1;
+                if (typeof languageTag !== "string" || !languageTag.trim()) throw new Error("Translation language is missing.");
+                return { id: Number(value.id), abbreviation: value.abbreviation, title: value.localized_title || value.title || "",
+                    languageTag, copyright: value.copyright ?? "" };
             });
-            if (!response.ok) throw new Error(`Failed to fetch version detail (${response.status})`);
-
-            const v = await response.json();
-
-            const detail: BibleVersionDetail = {
-                id: v.id,
-                abbreviation: v.abbreviation,
-                title: v.localized_title ?? v.title,
-                languageTag: v.language_tag ?? "",
-                copyright: v.copyright ?? ""
-            };
-            this.versionDetailCache.set(bibleId, detail);
-            return detail;
-        }
-        catch (err) {
-            console.error("YouVersionAPI version detail error:", err);
-            return null;
-        }
+        } catch { return null; }
     }
 
-    // fetch the localized book titles for a bible version
-    // returns a map of USFM book code (e.g. "GEN") -> localized title (e.g. "Génesis")
     static async fetchBookTitles(bibleId: number): Promise<Map<string, string>> {
         try {
-            const url = `${this.BASE_URL}/bibles/${bibleId}/books?page_size=99`;
-            const response = await fetch(url, {
-                headers: {
-                    "Accept": "application/json",
-                    "X-YVP-App-Key": this.APP_KEY
-                }
+            return await this.titles.get(String(bibleId), async () => {
+                const storageKey = `bibleApiCache:bookTitles:${bibleId}`;
+                try {
+                    const stored = JSON.parse(localStorage.getItem(storageKey) ?? "null");
+                    if (stored?.expires > Date.now() && Array.isArray(stored.entries) && stored.entries.every((entry: unknown) =>
+                        Array.isArray(entry) && entry.length === 2 && entry.every(value => typeof value === "string"))) return new Map<string, string>(stored.entries);
+                } catch { /* Network and session cache remain available without storage. */ }
+                const response = await this.request(`/bibles/${bibleId}/books`);
+                if (!response.ok) throw new Error("Could not load book names.");
+                const data = await response.json();
+                const titles = new Map<string, string>();
+                for (const book of data.data ?? []) if (book.id && book.title) titles.set(book.id, book.title);
+                try { localStorage.setItem(storageKey, JSON.stringify({ expires: Date.now() + 86400000, entries: [...titles] })); } catch { /* Use session cache. */ }
+                return titles;
             });
-            if (!response.ok) throw new Error(`Failed to fetch books (${response.status})`);
-
-            const data = await response.json();
-
-            const bookMap = new Map<string, string>();
-            for (const book of data.data as { id?: string; title?: string }[]) {
-                if (book.id && book.title) {
-                    bookMap.set(book.id, book.title);
-                }
-            }
-            return bookMap;
-        }
-        catch (err) {
-            console.error("YouVersionAPI books error:", err);
-            return new Map();
-        }
+        } catch { return new Map(); }
     }
 
-    // fetch a whole chapter as html, e.g. fetchChapterHtml(3034, "GEN.1")
-    static async fetchChapterHtml(bibleId: number, usfm: string) {
+    static async fetchChapterHtml(bibleId: number, usfm: string): Promise<{ ok: boolean; html: string; error: string; unavailable?: boolean; reference?: string }> {
         try {
-            const url = `${this.BASE_URL}/bibles/${bibleId}/passages/${encodeURIComponent(usfm)}?format=html&include_headings=false`;
-            const response = await fetch(url, {
-                headers: {
-                    "Accept": "application/json",
-                    "X-YVP-App-Key": this.APP_KEY
-                }
+            return await this.chapters.get(`${bibleId}:${usfm}`, async () => {
+                const response = await this.request(`/bibles/${bibleId}/passages/${encodeURIComponent(usfm)}?format=html&include_headings=false`);
+                if (response.status === 404 || response.status === 403) throw new Error("unavailable");
+                if (response.status === 204) throw new Error("empty");
+                if (!response.ok) throw new Error(response.status === 429 ? "rate-limit" : `HTTP ${response.status}`);
+                const data = await response.json();
+                if (!data.content?.trim()) throw new Error("empty");
+                return { ok: true, html: data.content, error: "", reference: typeof data.reference === "string" ? data.reference : undefined };
             });
-            if (response.status === 404) return { ok: false, html: "", unavailable: true, error: "This passage is not available in the selected translation. Try another passage or translation." };
-            if (!response.ok) throw new Error(`Failed to fetch passage (${response.status})`);
-
-            // 204 means the passage has no content available for this version
-            if (response.status === 204) {
-                return { ok: false, html: "", error: "No content available for this passage/version." };
-            }
-
-            const data = await response.json();
-            return { ok: true, html: data.content ?? "", error: "" };
-        }
-        catch (err) {
-            console.error("YouVersionAPI passage error:", err);
-            return { ok: false, html: "", error: "Error fetching passage." };
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "";
+            if (message === "unavailable") return { ok: false, html: "", unavailable: true, error: "This passage is not available in the selected translation. Try another passage or translation." };
+            if (message === "empty") return { ok: false, html: "", error: "No content is available for this passage and translation." };
+            if (error instanceof Error && error.name === "TimeoutError") return { ok: false, html: "", error: "The passage took too long to load. Please retry." };
+            return { ok: false, html: "", error: message === "rate-limit" ? "The Bible service is busy. Wait a moment and retry." : "Could not load the passage. Check your connection and retry." };
         }
     }
 }
 
-export default YouVersionAPI
+export default YouVersionAPI;
