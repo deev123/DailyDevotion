@@ -1,6 +1,7 @@
 /* Import order preserves the global cascade; some controls are shared across features. */
 @import "./styles/base.css";
 @import "./app/layout.css";
+@import "./features/bible/bible-reader.css";
 @import "./styles/reader-footer.css";
 @import "./components/menu.css";
 @import "./styles/reader-header.css";

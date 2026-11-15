@@ -1,10 +1,11 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { parseStoredLayout, migrateLegacyPassageIndices, type ComponentConfig } from "./layoutStorage.ts";
 import IntegratedSpeechPassage from "../features/bible/IntegratedSpeechPassage.tsx"
 import NoteBox from "../features/notes/NoteBox.tsx"
 import VideoPlaylist from "../features/video/VideoPlaylist.tsx"
 import Psalter from "../features/psalter/Psalter.tsx"
 import Catechism from "../features/catechism/Catechism.tsx"
+import BibleReader from "../features/bible/BibleReader.tsx"
 import Header from "./Header.tsx"
 import Menu from "../components/Menu.tsx"
 import VerseFlashcard from "../features/flashcard/VerseFlashcard.tsx"
@@ -32,6 +33,59 @@ const componentsConfigDefault: Component_t[] = [
 ];
 
 function Layout(){
+    useLayoutEffect(() => {
+        const previous = window.history.scrollRestoration;
+        window.history.scrollRestoration = "manual";
+        return () => { window.history.scrollRestoration = previous; };
+    }, []);
+    const [activeTab, setActiveTab] = useState<"bible" | "devotion">(() => localStorage.getItem("activeAppTab") === "bible" ? "bible" : "devotion");
+    const positions = useRef<Record<string, number>>({
+        bible: 0,
+        devotion: Math.max(0, Number(localStorage.getItem("devotionScrollY")) || 0),
+    });
+    const restoring = useRef(false);
+    function switchTab(tab: "bible" | "devotion") {
+        if (tab === activeTab) return;
+        window.dispatchEvent(new Event("reading-position-save"));
+        positions.current[activeTab] = window.scrollY;
+        if (activeTab === "devotion") localStorage.setItem("devotionScrollY", String(window.scrollY));
+        localStorage.setItem("activeAppTab", tab);
+        setActiveTab(tab);
+    }
+    useLayoutEffect(() => {
+        window.dispatchEvent(new Event("app-tab-change"));
+        // The Bible reader restores its verse after its text and fonts load.
+        if (activeTab !== "devotion") return;
+        const target = positions.current.devotion;
+        restoring.current = true;
+        function restore() {
+            window.scrollTo({ top: target, behavior: "instant" });
+            if (document.documentElement.scrollHeight - window.innerHeight >= target) finish();
+        }
+        const observer = new ResizeObserver(restore);
+        const finish = () => { restoring.current = false; observer.disconnect(); };
+        observer.observe(document.body);
+        restore();
+        window.addEventListener("touchstart", finish, { once: true });
+        window.addEventListener("wheel", finish, { once: true });
+        window.addEventListener("keydown", finish, { once: true });
+        return () => {
+            finish();
+            window.removeEventListener("touchstart", finish);
+            window.removeEventListener("wheel", finish);
+            window.removeEventListener("keydown", finish);
+        };
+    }, [activeTab]);
+    useEffect(() => {
+        function save() {
+            if (restoring.current) return;
+            positions.current[activeTab] = window.scrollY;
+            if (activeTab === "devotion") localStorage.setItem("devotionScrollY", String(window.scrollY));
+        }
+        window.addEventListener("scroll", save, { passive: true });
+        window.addEventListener("pagehide", save);
+        return () => { window.removeEventListener("scroll", save); window.removeEventListener("pagehide", save); };
+    }, [activeTab]);
     const [layoutError, setLayoutError] = useState("");
     
     const [storedLayout] = useState(() => parseStoredLayout(localStorage.getItem("componentsConfig")));
@@ -257,9 +311,12 @@ function Layout(){
     }];
 
     // wraps the layout; the settings button is fixed-position so it floats over everything
-    let elements = <>
-        <Header components={componentsConfig}/>
-        <div className="container">
+    let elements = <div>
+        <Header components={componentsConfig} activeTab={activeTab} onTabChange={switchTab}/>
+        <div id="bible-panel" role="tabpanel" aria-labelledby="bible-tab" hidden={activeTab !== "bible"} className="container">
+            <BibleReader active={activeTab === "bible"} />
+        </div>
+        <div id="devotion-panel" role="tabpanel" aria-labelledby="devotion-tab" hidden={activeTab !== "devotion"} className="container">
         {layoutError && <p className="passage-error" role="alert">{layoutError}</p>}
         {
             componentsConfig.map((c: Component_t) => {
@@ -322,7 +379,7 @@ function Layout(){
             </Menu>
         </section>
         </div>
-    </>
+    </div>
 
     return elements
 }

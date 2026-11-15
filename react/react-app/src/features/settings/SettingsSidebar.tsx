@@ -140,10 +140,12 @@ function SettingsSidebar({ onOpenChange, onNavigate, components }: { onOpenChang
             const target = document.getElementById(`contents-${id}`);
             if (!target) return;
             target.setAttribute("aria-label", label);
-            target.focus({ preventScroll: true });
             const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
             onNavigate();
-            target.scrollIntoView({ behavior: reducedMotion ? "instant" : "smooth", block: "start" });
+            requestAnimationFrame(() => {
+                target.focus({ preventScroll: true });
+                target.scrollIntoView({ behavior: reducedMotion ? "instant" : "smooth", block: "start" });
+            });
         });
     }
 

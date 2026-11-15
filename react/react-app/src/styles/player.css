@@ -74,3 +74,6 @@
   pointer-events: none;
 }
 .speech-player-position { flex: 1 1 auto; text-align: center; white-space: nowrap; font-size: 0.75rem; color: var(--text-muted); }
+
+/* Portal controls belong to the reader's persistent toolbar. */
+.player-disclosure.player-disclosure-portaled { display: contents; }

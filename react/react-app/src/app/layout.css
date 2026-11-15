@@ -58,3 +58,14 @@ p
   line-height: 1.5;
 }
 
+
+#bible-panel[hidden], #devotion-panel[hidden] { display: none !important; }
+.app-tabs { display: flex; margin-right: auto; align-self: stretch; }
+.app-tabs button {
+  border: 0; border-bottom: 3px solid transparent; background: none;
+  color: var(--text-muted); padding: 0 12px; cursor: pointer; font-size: .85rem;
+}
+.app-tabs button[aria-selected="true"] { border-bottom-color: var(--brand); color: var(--text); }
+@media (max-width: 380px) { .app-tabs button { padding: 0 6px; font-size: .75rem; } }
+/* Clip sliding text without creating a scrolling ancestor for sticky controls. */
+#bible-panel { overflow-x: clip; }

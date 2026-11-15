@@ -1,3 +1,4 @@
+import { dismissDialogOnOutsideClick } from "../../components/dialogDismiss";
 import { useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { deleteAppData } from "./deleteAppData";
@@ -34,7 +35,7 @@ export default function DeleteData() {
             aria-labelledby={`${id}-title`} aria-describedby={`${id}-description`}
             onKeyDown={event => { if (event.key === "Escape") event.stopPropagation(); }}
             onCancel={event => { if (deleting) event.preventDefault(); }}
-            onClick={event => event.stopPropagation()}>
+            onClick={dismissDialogOnOutsideClick}>
             <div className="delete-data-heading">
                 <span className="material-icons" aria-hidden="true">warning</span>
                 <h2 id={`${id}-title`}>Reset app?</h2>

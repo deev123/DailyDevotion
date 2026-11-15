@@ -1,3 +1,4 @@
+import { dismissDialogOnOutsideClick } from "../../components/dialogDismiss";
 import type { MenuOption } from "../../components/Menu.tsx" // import type important for importing types
 import Menu from "../../components/Menu.tsx"
 import ListPicker from "../../components/ListPicker.tsx"
@@ -214,7 +215,7 @@ function Catechism({ layoutOptions, id, list }: CatechismProps){
             : <p>...</p>}
         </div>
         {createPortal(<dialog ref={dialogRef} className="dialog catechism-dialog" aria-labelledby={`${id}-reference-title`}
-            onClose={() => setSelectedReference(null)}>
+            onClose={() => setSelectedReference(null)} onClick={dismissDialogOnOutsideClick}>
             <div className="catechism-dialog-header">
                 <h2 id={`${id}-reference-title`}>{selectedReference?.label}</h2>
                 <button type="button" onClick={() => dialogRef.current?.close()} aria-label="Close passage">×</button>

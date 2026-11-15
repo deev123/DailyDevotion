@@ -3,7 +3,11 @@ import SettingsSidebar from "../features/settings/SettingsSidebar.tsx"
 import Streak from "../features/streak/Streak.tsx"
 import type { ComponentConfig } from "./layoutStorage.ts"
 
-function Header({ components }: { components: ComponentConfig[] }) {
+function Header({ components, activeTab, onTabChange }: {
+    components: ComponentConfig[];
+    activeTab: "bible" | "devotion";
+    onTabChange: (tab: "bible" | "devotion") => void;
+}) {
     const [hidden, setHidden] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const navigating = useRef(false);
@@ -60,8 +64,20 @@ function Header({ components }: { components: ComponentConfig[] }) {
 
     return (
         <header className={"top-header" + (hidden && !settingsOpen ? " header-hidden" : "")}>
+            <div className="app-tabs" role="tablist" aria-label="App pages">
+                {(["bible", "devotion"] as const).map(tab => <button key={tab} type="button" role="tab"
+                    id={`${tab}-tab`} aria-controls={`${tab}-panel`} aria-selected={activeTab === tab}
+                    tabIndex={activeTab === tab ? 0 : -1} onClick={() => { keepHeaderVisible(); onTabChange(tab); }}
+                    onKeyDown={event => {
+                        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+                        event.preventDefault();
+                        const next = event.key === "Home" ? "bible" : event.key === "End" ? "devotion" : tab === "bible" ? "devotion" : "bible";
+                        keepHeaderVisible(); onTabChange(next);
+                        document.getElementById(`${next}-tab`)?.focus({ preventScroll: true });
+                    }}>{tab === "bible" ? "Bible" : "Daily Devotion"}</button>)}
+            </div>
             <Streak />
-            <SettingsSidebar onOpenChange={setSettingsOpen} onNavigate={keepHeaderVisible} components={components} />
+            <SettingsSidebar onOpenChange={setSettingsOpen} onNavigate={() => { onTabChange("devotion"); keepHeaderVisible(); }} components={components} />
         </header>
     );
 }

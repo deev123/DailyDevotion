@@ -1,6 +1,6 @@
+import { createPortal } from "react-dom";
 import { createPopper } from "@popperjs/core"
-import type { Instance } from "@popperjs/core"
-import { useRef, useState, useEffect, cloneElement, type ReactElement} from "react"
+import { useRef, useState, useEffect, useLayoutEffect, cloneElement, type ReactElement, type ComponentPropsWithRef} from "react"
 
 
 export type MenuOption = {
@@ -8,7 +8,7 @@ export type MenuOption = {
     action: () => void; // ...args: any allows function parameters
 }
 
-type ClickableElement = ReactElement<React.HTMLAttributes<HTMLElement>>;
+type ClickableElement = ReactElement<ComponentPropsWithRef<"button">>;
 
 export type MenuProps = {
     options: MenuOption[];
@@ -32,13 +32,8 @@ function Menu({ options , children}: MenuProps)
 
     const [open, setOpen] = useState(false);
 
-    // need reference to container to tell if a click occurs outside of the element
-    const containerRef = useRef<HTMLDivElement>(null);
-    
-    // popper instance for positioning the menu
-    const [, setPopperInstance] = useState<Instance | null>(null);
     // refs for popper positioning
-    const buttonRef = useRef<HTMLButtonElement>(null);
+    const triggerRef = useRef<HTMLDivElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
 
     // when open, add eventlistener which closes menu on a click outside of the menu
@@ -48,42 +43,43 @@ function Menu({ options , children}: MenuProps)
             if(!open) return;
             // console.log(options);
             // add eventlistener to close the menu if something outside the menu is clicked
-            function handleClick(e: MouseEvent)
+            function handleClick(e: PointerEvent)
             {
-                if(containerRef.current && !containerRef.current.contains(e.target as Node))
+                if(!triggerRef.current?.contains(e.target as Node) && !menuRef.current?.contains(e.target as Node))
                 {
                     setOpen(false);
                 }
             }
-            document.addEventListener("mousedown", handleClick);
+            document.addEventListener("pointerdown", handleClick);
 
             // return function to remove the eventlistener
             return () => {
-                document.removeEventListener("mousedown", handleClick);
+                document.removeEventListener("pointerdown", handleClick);
             }
 
         }
     , [open]);
 
-    // useeffect for popper positioning, create instance on opening menu
-    useEffect(() => {
+    // Portal menus escape clipping and sticky-header stacking contexts.
+    useLayoutEffect(() => {
         if(!open) return;
-        if (!buttonRef.current || !menuRef.current) return;
+        const button = triggerRef.current?.querySelector("button");
+        if (!button || !menuRef.current) return;
 
-        const popper = createPopper(buttonRef.current, menuRef.current, {
-                placement: "bottom-start",
+        const popper = createPopper(button, menuRef.current, {
+                placement: "bottom-end",
+                strategy: "fixed",
                 modifiers: [
                     { name: "offset", options: { offset: [0, 8] } },
                     { name: "preventOverflow", options: { padding: 8 } },
-                    { name: "flip", options: { fallbackPlacements: ["top-start"] } },
+                    { name: "flip", options: { fallbackPlacements: ["top-end", "bottom-start", "top-start"] } },
                 ],
             })
 
-        setPopperInstance(popper);
+        popper.forceUpdate();
 
         return () => {
             popper.destroy();
-            setPopperInstance(null);
         }
 
     }, [open]);
@@ -92,26 +88,32 @@ function Menu({ options , children}: MenuProps)
     // element must contain a button element as the child
     // ( <Menu MenuProps=[...Menuoptions]> <button/> </Menu> )
     // WARNING: Will overwrite any existing props
-    const trigger = cloneElement(children as React.ReactElement<any>, {
-        onClick: () => setOpen(o => !o),
-        ref: buttonRef
+    const trigger = cloneElement(children, {
+        "aria-expanded": open,
+        onClick: () => setOpen(o => !o)
     });
     // could also wrap in element to add onclick?
 
     return (
-    <div ref={containerRef}>
+    <div ref={triggerRef}>
         
         {trigger}{/* add trigger element (copied and onclick prop inserted) */} 
         {/* conditionally render if open */}
-        {open && (
-            <div ref={menuRef} className="menu">
+        {open && createPortal(
+            <div ref={menuRef} className="menu" onKeyDown={event => {
+                if (event.key === "Escape") {
+                    event.stopPropagation();
+                    setOpen(false);
+                    triggerRef.current?.querySelector("button")?.focus({ preventScroll: true });
+                }
+            }}>
                 {/* add options from props */}
                 {options.map((option, i) => (
                     <button key={i} onClick={() => {option.action(); setOpen(false);}}>
                         {option.label}
                     </button>
                 ))}
-            </div>
+            </div>, document.body
         )}
     </div>
     )

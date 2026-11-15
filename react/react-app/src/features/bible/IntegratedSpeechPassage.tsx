@@ -1,3 +1,4 @@
+import { commentaryUrl } from "./bibleReference";
 import type { MenuOption } from "../../components/Menu.tsx" // import type important for importing types
 import Menu from "../../components/Menu.tsx"
 import PassagePicker from "../../components/PassagePicker.tsx"
@@ -13,18 +14,6 @@ type PassageProps = {
     layoutOptions: MenuOption[],
     id: string,
     list: string // file name or local store var name
-}
-
-function commentaryUrl(reference: string): string | null {
-    const match = reference.trim().match(/^(.+?)\s+(\d+)$/);
-    if (!match || !YouVersionAPI.referenceToUsfm(reference)) return null;
-
-    const book = match[1] === "Psalm" ? "psalms" : match[1].toLowerCase().replace(/\s+/g, "-");
-    const chapter = Number(match[2]);
-    if (chapter < 1) return null;
-    // Bible Study Tools uses a different chapter filename for this book.
-    const filename = book === "song-of-solomon" ? `${book}-${chapter}` : String(chapter);
-    return `https://www.biblestudytools.com/commentaries/matthew-henry-complete/${book}/${filename}.html`;
 }
 
 // return as an array a list separated by newlines
@@ -77,7 +66,7 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
         return () => observer.disconnect();
     }, []);
 
-    let [index, setIndex] = useState(0);
+    const [index, setIndex] = useState(0);
     // elements of selection. e.g. loaded from Bible_Chapters.txt
     let [listElements, setListElements] = useState<string[]>([]);
     let [html, setHtml] = useState("");
@@ -87,7 +76,7 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
 
     // bible version selection
     let [versions, setVersions] = useState<{id: number, abbreviation: string, title: string, languageTag: string, languageName: string, languageGroup: string, languageSearch: string, books: string[] | null}[]>([]);
-    let [versionId, setVersionId] = useState<number | null>(null);
+    const [versionId, setVersionId] = useState<number | null>(null);
     // copyright notice for the selected version
     let [copyright, setCopyright] = useState("");
     // localized book titles for the selected version: USFM code -> localized title e.g. GEN -> Génesis

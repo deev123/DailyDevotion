@@ -12,7 +12,7 @@ let playbackGeneration = 0;
 
 export type PlayerState = { open: boolean; playing: boolean; generation?: number };
 
-type Props = { defaultFollow?: boolean; autoPlayGeneration?: number; onContinueChapter?: (isCurrent: () => boolean, generation: number) => Promise<boolean>; mergeInlineText?: boolean; textContainer?: HTMLElement | null; initialOpen?: boolean; onPlayerStateChange?: (state: PlayerState) => void; autoPlay?: boolean; onComplete?: (isCurrent: () => boolean) => Promise<boolean>; hideText?: boolean; onPlaybackStart?: () => void; onPlayerOpen?: () => void; html: string; id: string; language: string; passageKey?: string; passageIndex?: number; playerTriggerContainer?: HTMLElement | null; stopPlayerRef?: RefObject<(() => void) | null> };
+type Props = { playerContainer?: HTMLElement | null; playerActive?: boolean; playerLabel?: string; defaultFollow?: boolean; autoPlayGeneration?: number; onContinueChapter?: (isCurrent: () => boolean, generation: number) => Promise<boolean>; mergeInlineText?: boolean; textContainer?: HTMLElement | null; initialOpen?: boolean; onPlayerStateChange?: (state: PlayerState) => void; autoPlay?: boolean; onComplete?: (isCurrent: () => boolean) => Promise<boolean>; hideText?: boolean; onPlaybackStart?: () => void; onPlayerOpen?: () => void; html: string; id: string; language: string; passageKey?: string; passageIndex?: number; playerTriggerContainer?: HTMLElement | null; stopPlayerRef?: RefObject<(() => void) | null> };
 type Sentence = { text: string; index: number };
 
 // Wrap readable text in place so the experimental reader retains the source
@@ -97,7 +97,7 @@ function readPosition(id: string, passageKey: string): number {
     } catch { return 0; }
 }
 
-export default function SpeechPassage({ defaultFollow = false, autoPlayGeneration, onContinueChapter, mergeInlineText = false, textContainer, initialOpen = false, onPlayerStateChange, autoPlay = false, onComplete, hideText = false, onPlaybackStart, onPlayerOpen, html, id, language, passageKey = "", passageIndex, playerTriggerContainer, stopPlayerRef }: Props) {
+export default function SpeechPassage({ playerContainer, playerActive = true, playerLabel, defaultFollow = false, autoPlayGeneration, onContinueChapter, mergeInlineText = false, textContainer, initialOpen = false, onPlayerStateChange, autoPlay = false, onComplete, hideText = false, onPlaybackStart, onPlayerOpen, html, id, language, passageKey = "", passageIndex, playerTriggerContainer, stopPlayerRef }: Props) {
     const supported = typeof window.speechSynthesis !== "undefined" && typeof SpeechSynthesisUtterance !== "undefined";
     const [follow, setFollow] = useState(() => readPreference(id + "_speechFollow", String(defaultFollow)) === "true");
     const [continueChapter, setContinueChapter] = useState(() => readPreference(id + "_speechContinue", "false") === "true");
@@ -139,7 +139,20 @@ export default function SpeechPassage({ defaultFollow = false, autoPlayGeneratio
         onPlayerStateChange?.({ open: playerOpen, playing: status === "playing", generation: status === "playing" ? playerGeneration : undefined });
     }, [playerOpen, status, playerGeneration, onPlayerStateChange]);
 
+    const closeInactivePlayer = useEffectEvent(() => {
+        if (!playerActive && playerOpen) { pause(); setPlayerOpen(false); }
+    });
+    useEffect(() => { closeInactivePlayer(); }, [playerActive]);
+
     const stopPlayback = useEffectEvent(() => pause());
+    const pauseHiddenReader = useEffectEvent(() => {
+        if (status === "playing" && (textContainer ?? textRef.current)?.closest("[hidden]")) pause();
+    });
+    useEffect(() => {
+        const onTabChange = () => pauseHiddenReader();
+        window.addEventListener("app-tab-change", onTabChange);
+        return () => window.removeEventListener("app-tab-change", onTabChange);
+    }, []);
     useEffect(() => {
         if (!stopPlayerRef) return;
         // Stop only this reader; speech synthesis is shared across the tab.
@@ -176,9 +189,9 @@ export default function SpeechPassage({ defaultFollow = false, autoPlayGeneratio
         return doc.body.innerHTML;
     }, [integratedPassage, status, currentPosition, word]);
     useEffect(() => {
-        if (!follow || status !== "playing" || document.hidden || !textRef.current) return;
+        if (!follow || status !== "playing" || document.hidden || (playerContainer && document.querySelector("dialog:modal")) || !textRef.current) return;
         followSpeechHighlight(textRef.current);
-    }, [follow, status, currentPosition, word, highlightedMarkup, textContainer]);
+    }, [follow, status, currentPosition, word, highlightedMarkup, textContainer, playerContainer]);
 
     const voice = selectedVoice ? voices.find(item => voiceKey(item) === selectedVoice)
         : voices.find(item => item.lang.toLowerCase() === language.toLowerCase())
@@ -385,9 +398,11 @@ export default function SpeechPassage({ defaultFollow = false, autoPlayGeneratio
         if (!autoPlay || !voice) return;
         // Voice discovery can be asynchronous. Never start with a fallback voice,
         // and never let a pending automatic start restart manually paused speech.
-        const timer = window.setTimeout(() => startAutomatically(), 0);
+        const timer = window.setTimeout(() => {
+            if (!(textContainer ?? textRef.current)?.closest("[hidden]")) startAutomatically();
+        }, 0);
         return () => window.clearTimeout(timer);
-    }, [autoPlay, voice]);
+    }, [autoPlay, voice, textContainer]);
 
     function changeFollow(value: boolean) {
         setFollow(value);
@@ -465,19 +480,10 @@ export default function SpeechPassage({ defaultFollow = false, autoPlayGeneratio
         play(positionRef.current, rate, offset, nextVoice);
     }
 
-    return <div className="speech-passage">
-        <div className={`player-disclosure${playerOpen || error ? " player-disclosure-open" : ""}`}>
-            {playerTriggerContainer && createPortal(<button type="button" className="player-icon-button player-toggle" aria-label={playerOpen ? "Close read aloud player" : "Open read aloud player"}
-                title={playerOpen ? "Close read aloud player" : "Open read aloud player"}
-                aria-expanded={playerOpen} aria-controls={playerOpen ? `${id}-read-aloud-player` : undefined} onClick={() => {
-                    if (playerOpen) pause();
-                    if (!playerOpen) onPlayerOpen?.();
-                    setPlayerOpen(!playerOpen);
-                }}>
-                <span className="material-icons" aria-hidden="true">{playerOpen ? "close" : "volume_up"}</span>
-            </button>, playerTriggerContainer)}
-            {playerOpen && <div id={`${id}-read-aloud-player`} className="player-bar speech-player-bar" role="group" aria-label="Read aloud player"
+    const playerBar = (
+<div id={`${id}-read-aloud-player`} className="player-bar speech-player-bar" role="group" aria-label="Read aloud player"
                 style={{ "--speech-progress": `${sentences.length ? (currentPosition + 1) / sentences.length * 100 : 0}%` } as CSSProperties}>
+                {playerLabel && <span className="speech-player-reference">{playerLabel}</span>}
                 {!supported ? <p role="status">Text to speech is not available in this browser.</p> : <>
                     <button type="button" className="player-icon-button" disabled={!sentences.length || currentPosition === 0}
                         aria-label="Previous sentence" title="Previous sentence" onPointerDown={event => { if (event.button === 0) { event.currentTarget.setPointerCapture(event.pointerId); startRepeating(-1); } }}
@@ -510,9 +516,27 @@ export default function SpeechPassage({ defaultFollow = false, autoPlayGeneratio
                         <span className="material-icons" aria-hidden="true">settings</span>
                     </button>
                 </>}
+                {playerContainer && <button type="button" className="player-icon-button" aria-label="Close read aloud player" title="Close read aloud player"
+                    onClick={() => { pause(); setPlayerOpen(false); }}>
+                    <span className="material-icons" aria-hidden="true">close</span>
+                </button>}
                 {hideText && !sentences.length && <p role="status">No readable text on this page. Scanned pages may contain only images.</p>}
                 {error && <p className="passage-error" role="alert">{error}</p>}
-            </div>}
+            </div>
+    );
+
+    return <div className="speech-passage">
+        <div className={`player-disclosure${playerOpen || error ? " player-disclosure-open" : ""}${playerContainer ? " player-disclosure-portaled" : ""}`}>
+            {playerTriggerContainer && createPortal(<button type="button" className="player-icon-button player-toggle" aria-label={playerOpen ? "Close read aloud player" : "Open read aloud player"}
+                title={playerOpen ? "Close read aloud player" : "Open read aloud player"}
+                aria-expanded={playerOpen} aria-controls={playerOpen ? `${id}-read-aloud-player` : undefined} onClick={() => {
+                    if (playerOpen) pause();
+                    if (!playerOpen) onPlayerOpen?.();
+                    setPlayerOpen(!playerOpen);
+                }}>
+                <span className="material-icons" aria-hidden="true">{playerOpen ? "close" : "volume_up"}</span>
+            </button>, playerTriggerContainer)}
+            {playerOpen && playerActive && (playerContainer ? createPortal(playerBar, playerContainer) : playerBar)}
             {!playerOpen && error && <p className="passage-error" role="alert">{error}</p>}
             {createPortal(<dialog ref={settingsRef} className="dialog speech-settings" aria-labelledby={`${id}-speech-settings-title`}
                 onClick={event => {

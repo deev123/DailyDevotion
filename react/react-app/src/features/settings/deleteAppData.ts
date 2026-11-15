@@ -2,6 +2,7 @@ import { clearAllAudio } from "../audio/audioStorage";
 import { clearAllPdfData } from "../pdf/pdfStorage";
 
 const appKeys = [
+    "activeAppTab", "devotionScrollY", "lookupBibleState",
     "componentsConfig", "streak", "themeBackground", "themeText", "themePreset",
     "themeCustomBackground", "themeCustomText", "themeFont", "themeFontSize", "themeLetterSpacing", "defaultSpeechVoice", "defaultBibleVersion",
 ];
@@ -23,7 +24,7 @@ export async function deleteAppData(): Promise<void> {
         for (const suffix of componentSuffixes) {
             if (!key.endsWith(suffix)) continue;
             const id = key.slice(0, -suffix.length);
-            if (ids.has(id) || /^comp_[a-z0-9]+$/u.test(id)) keys.add(key);
+            if (ids.has(id) || /^comp_[a-z0-9]+$/u.test(id) || /^lookupBible_\d+$/u.test(id)) keys.add(key);
         }
     }
     // Leave local settings untouched if clearing PDF storage fails.

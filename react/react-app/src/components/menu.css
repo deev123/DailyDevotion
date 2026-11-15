@@ -5,9 +5,13 @@
 
 .menu
 {
-  position:absolute;
-  top: -50px;
-  right: 0px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   width: max-content;

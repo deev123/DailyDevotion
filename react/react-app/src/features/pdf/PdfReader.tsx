@@ -1,3 +1,4 @@
+import { dismissDialogOnOutsideClick } from "../../components/dialogDismiss";
 import { useEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 // Include PDF.js compatibility helpers for browsers such as Samsung Internet.
@@ -436,7 +437,7 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
             </div>}
             {pdf && runnerOpen && createPortal(<dialog ref={runnerDialogRef}
                 className="pdf-word-runner pdf-runner-fullscreen" aria-label="Full-screen word runner"
-                onClose={() => setFullscreenControls(false)}>
+                onClose={() => setFullscreenControls(false)} onClick={dismissDialogOnOutsideClick}>
                 <div className="pdf-runner-fullscreen-header" hidden={!fullscreenControls}>
                     <button type="button" className="pdf-runner-icon-button" aria-label="Close full-screen word runner"
                         title="Return to reader" onClick={() => runnerDialogRef.current?.close()}>

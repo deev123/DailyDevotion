@@ -1,0 +1,65 @@
+.bible-reader { width: 100%; overflow-anchor: none; }
+.bible-chapter { margin-bottom: 24px; }
+.bible-load-more { display: flex; gap: 12px; justify-content: center; margin: 20px 0; }
+.bible-load-more button, .bible-history li button {
+  border: 1px solid var(--border-subtle); border-radius: 6px; background: var(--background);
+  color: var(--text); padding: 12px; cursor: pointer;
+}
+.bible-history-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 12px 20px 20px;
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.bible-history li button { width: 100%; text-align: left; margin-bottom: 6px; }
+.swipe-passage { touch-action: pan-y pinch-zoom; scroll-margin-top: 52px; }
+.swipe-passage .passage-body { overflow-wrap: anywhere; }
+.bible-passage-controls {
+  position: sticky;
+  top: var(--header-offset);
+  z-index: 20;
+  background: var(--background);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 48px;
+  border-bottom: 1px solid var(--accent1);
+}
+.bible-header-passage { flex: 1 1 0; min-width: 0; }
+.bible-header-passage > .passage-header { position: static; border-bottom: 0; }
+.bible-passage-controls .bible-header-icon { flex: 0 0 36px; width: 36px; padding: 4px; }
+.bible-settings-content { padding: 16px; }
+.bible-settings-content label { display: flex; align-items: center; gap: 8px; }
+.bible-settings-content p { font-size: .85rem; color: var(--text-muted); }
+.bible-load-previous { min-height: 1px; text-align: center; }
+.bible-load-previous button {
+  background: var(--background); color: var(--text); border: 1px solid var(--border-subtle);
+  padding: 10px; border-radius: 6px; margin: 12px 0;
+}
+.bible-reader .bible-chapter-title {
+  margin: 20px 0 16px;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.bible-sticky-header {
+  position: sticky;
+  top: var(--header-offset);
+  z-index: 20;
+  background: var(--background);
+}
+.bible-sticky-header > .bible-passage-controls { position: static; }
+.bible-audio-controls:empty { display: none; }
+.bible-audio-controls .player-bar { margin: 0 0 4px; }
+.bible-audio-controls .player-bar::before { display: none; }
+.speech-player-reference { flex: 1 0 100%; font-size: .8rem; font-weight: 600; }
+
+/* Lock the reading page behind the Bible tab's own modal dialogs. */
+html:has(.bible-history:modal, .bible-settings:modal),
+html:has(.bible-history:modal, .bible-settings:modal) body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
