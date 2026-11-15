@@ -1,3 +1,4 @@
+import LoadingSkeleton from "../../components/LoadingSkeleton";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import PassagePicker from "../../components/PassagePicker";
@@ -110,9 +111,9 @@ export default function BibleChapter({ id, references, reader }: { id: string; r
     </div>;
     return <section ref={section} className="swipe-passage" data-reader-ready={ready} data-loaded-passage={content.key} {...swipeHandlers}>
         {reader.headerActive && reader.headerContainer && createPortal(header, reader.headerContainer)}
-        <div ref={bodyRef} className="passage-body">
+        <div ref={bodyRef} className="passage-body" aria-busy={!html && !error}>
             <h2 className="bible-chapter-title">{label(reference)}</h2>
-            {error ? <div className="passage-error" role="alert"><p>{error}</p><button type="button" onClick={() => setAttempt(previous => previous + 1)}>Retry</button></div> : html && metadata.detail ? <SpeechPassage
+            {error ? <div className="passage-error" role="alert"><p>{error}</p><button type="button" onClick={() => { setContent({ key: "", html: "", error: "" }); setVersionError(""); setAttempt(previous => previous + 1); }}>Retry</button></div> : html && metadata.detail ? <SpeechPassage
                 key={passageKey} id={id} html={html} language={metadata.detail?.languageTag || "en"}
                 passageKey={`${reference}|${version}`} playerContainer={reader.playerContainer} playerActive={reader.playerActive}
                 playerLabel={label(reference)} onPlayerOpen={reader.onPlayerOpen} onPlaybackStart={reader.onPlayerOpen}
@@ -122,7 +123,7 @@ export default function BibleChapter({ id, references, reader }: { id: string; r
                     if (!isCurrent() || index + 1 >= references.length) return false;
                     reader.onContinue(index + 1, generation);
                     return true;
-                }} /> : html ? <div className="speech-integrated-text" dangerouslySetInnerHTML={{ __html: html }} /> : <p role="status">Loading chapter…</p>}
+                }} /> : html ? <div className="speech-integrated-text" dangerouslySetInnerHTML={{ __html: html }} /> : <LoadingSkeleton label="Loading chapter…" />}
             {!error && metadata.failed && <p className="passage-error" role="status">Translation details could not be loaded. Read aloud is unavailable until they load. <button type="button" onClick={metadata.retry}>Retry details</button></p>}
         </div>
         {metadata.detail?.copyright && <div className="passage-copyright">{metadata.detail.copyright}</div>}

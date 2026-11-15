@@ -1,3 +1,4 @@
+import LoadingSkeleton from "../../components/LoadingSkeleton";
 import { commentaryUrl } from "./bibleReference";
 import type { MenuOption } from "../../components/Menu.tsx" // import type important for importing types
 import Menu from "../../components/Menu.tsx"
@@ -237,13 +238,13 @@ function IntegratedSpeechPassage({ layoutOptions, id, list }: PassageProps){
                 </Menu>
             </div>
         </div>
-        <div className="passage-body">
-            {error ? <div className="passage-error" role="alert"><p>{error}</p><button type="button" onClick={() => setAttempt(previous => previous + 1)}>Retry</button></div>
+        <div className="passage-body" aria-busy={!html && !error}>
+            {error ? <div className="passage-error" role="alert"><p>{error}</p><button type="button" onClick={() => { setError(""); setHtml(""); setAttempt(previous => previous + 1); }}>Retry</button></div>
              : html && metadata.detail ? <SpeechPassage key={`${index}-${versionId}`} html={html} id={id} passageKey={`${reference}|${versionId}`} passageIndex={index} playerTriggerContainer={playerTriggerContainer} stopPlayerRef={stopPlayerRef}
                  initialOpen={resumePlayer.open} autoPlay={resumePlayer.playing} autoPlayGeneration={resumePlayer.generation}
                  onContinueChapter={continueToNextChapter}
                  onPlayerStateChange={state => { playerState.current = state; }}
-                 language={metadata.detail?.languageTag || "und"} /> : html ? <div className="speech-integrated-text" dangerouslySetInnerHTML={{ __html: html }} /> : <p>...</p>}
+                 language={metadata.detail?.languageTag || "und"} /> : html ? <div className="speech-integrated-text" dangerouslySetInnerHTML={{ __html: html }} /> : <LoadingSkeleton />}
             {!error && metadata.failed && <p className="passage-error" role="status">Translation details could not be loaded. Read aloud is unavailable until they load. <button type="button" onClick={metadata.retry}>Retry details</button></p>}
         </div>
         {metadata.detail?.copyright &&

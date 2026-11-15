@@ -1,3 +1,4 @@
+import LoadingSkeleton from "../../components/LoadingSkeleton";
 import { useMemo, useState } from "react";
 import ListPicker from "../../components/ListPicker";
 import YouVersionAPI, { type BibleVersion, type BibleVersionDetail } from "./YouVersionAPI";
@@ -53,5 +54,5 @@ export default function TranslationPicker({ value, detail, onChange, className =
     return <ListPicker title="Select translation" allowEmpty groupTabs className={className} value={value}
         triggerLabel={detail?.abbreviation || (value ? String(value) : "…")} options={options}
         onOpen={() => { void loadIndex(); }} onTabChange={tab => { if (tab === "language") void loadNames(); }} onChange={onChange}
-        status={loading ? "Loading translations…" : error ? <>{error} <button type="button" onClick={() => { void loadIndex(); }}>Retry</button></> : undefined} />;
+        status={loading && !index.length ? <LoadingSkeleton variant="list" label="Loading translations…" /> : error ? <>{error} <button type="button" onClick={() => { void loadIndex(); }}>Retry</button></> : undefined} />;
 }
