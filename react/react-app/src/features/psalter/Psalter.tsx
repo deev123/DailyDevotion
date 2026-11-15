@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import ListPicker from "../../components/ListPicker.tsx";
 import confetti from "canvas-confetti";
 import GooeyCheckbox from "../../components/GooeyCheckbox.tsx";
@@ -37,6 +37,7 @@ export default function Psalter({ id, layoutOptions }: { id: string; layoutOptio
     const [audioError, setAudioError] = useState("");
     const audioRef = useRef<HTMLAudioElement>(null);
     const sectionRef = useRef<HTMLElement>(null);
+    const scrollPositionRef = useRef<{ index: number; bottom: number } | null>(null);
     const headerRef = useRef<HTMLDivElement>(null);
     const playRequest = useRef(0);
     useEffect(() => {
@@ -98,9 +99,24 @@ export default function Psalter({ id, layoutOptions }: { id: string; layoutOptio
         return () => { cancelled = true; };
     }, []);
     function select(value: number) {
+        scrollPositionRef.current = null;
         setIndex(value);
         localStorage.setItem(id + "_index", String(value));
     }
+    function next() {
+        const nextIndex = (index + 1) % references.length;
+        const item = sectionRef.current?.closest(".layout-section") ?? sectionRef.current;
+        select(nextIndex);
+        scrollPositionRef.current = item ? { index: nextIndex, bottom: item.getBoundingClientRect().bottom } : null;
+    }
+    useLayoutEffect(() => {
+        const saved = scrollPositionRef.current;
+        if (saved?.index !== index || (!psalms.length && !error)) return;
+        const item = sectionRef.current?.closest(".layout-section") ?? sectionRef.current;
+        if (!item) return;
+        scrollPositionRef.current = null;
+        window.scrollBy({ top: item.getBoundingClientRect().bottom - saved.bottom, behavior: "instant" });
+    }, [index, psalms, error]);
     return <section ref={sectionRef}>
         <div ref={headerRef} className="passage-header integrated-passage-header">
             <PassagePicker references={references} value={index} onChange={select} />
@@ -146,7 +162,7 @@ export default function Psalter({ id, layoutOptions }: { id: string; layoutOptio
             setChecked(true);
             confetti({ particleCount: 50, spread: 1000, origin: { y: 0.5 } });
             await new Promise(resolve => setTimeout(resolve, 1000));
-            select((index + 1) % 150);
+            next();
             setChecked(false);
         }} /></div>
     </section>;
