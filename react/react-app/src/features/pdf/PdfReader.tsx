@@ -7,6 +7,7 @@ import type { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist"
 import workerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url"
 import type { PlayerState } from "../speech/SpeechPassage.tsx"
 import SpeechPassage from "../speech/SpeechPassage.tsx"
+import { usePlaybackWakeLock } from "../usePlaybackWakeLock.ts"
 import Menu from "../../components/Menu.tsx"
 import type { MenuOption } from "../../components/Menu.tsx"
 import { readPdfText } from "./pdfTextReader.ts"
@@ -32,6 +33,7 @@ function PdfReader({ id, layoutOptions }: PdfReaderProps) {
     const [wordIndex, setWordIndex] = useState(0);
     const [speed, setSpeed] = useState(300);
     const [running, setRunning] = useState(false);
+    usePlaybackWakeLock(running);
     const [rampWords, setRampWords] = useState(0);
     const playerState = useRef<PlayerState>({ open: false, playing: false });
     const [sections, setSections] = useState(() => loadPdfSections(id));
