@@ -30,8 +30,14 @@
   width: 100%;
 }
 
-.layout-section { width: 100%; scroll-margin-top: 60px; }
+.layout-section { box-sizing: border-box; width: min(100%, 350px); margin-bottom: 16px; border: 1px solid var(--outline); border-radius: 10px; scroll-margin-top: 60px; }
 .layout-section:focus { outline: none; }
+.layout-section-toggle { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 12px; border: 0; border-radius: 9px; background: var(--accent1); color: var(--text); font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
+.layout-section-toggle:hover { background: var(--surface-hover); }
+.layout-section-toggle:focus-visible { outline: 2px solid var(--text); outline-offset: -3px; }
+.layout-section-content { padding: 12px; }
+.layout-section-content[hidden] { display: none; }
+.container .layout-section-content > section { margin-bottom: 0; }
 
 .contents-nav { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border-subtle); }
 .contents-nav h2, .settings-heading { margin: 0 0 12px; font-size: 1rem; }

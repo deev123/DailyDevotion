@@ -32,6 +32,11 @@ const componentsConfigDefault: Component_t[] = [
     }
 ];
 
+function sectionLabel(component: Component_t): string {
+    if (component.type === "passage2") return component.list.replace(/\.txt$/i, "").replace(/[_-]+/g, " ");
+    return { notebox: "Notes", videoPlaylist: "Video playlist", catechism: "Catechism", psalter: "Psalter", pdfReader: "PDF reader", audioPlayer: "Audio player", verseGame: "Verse Finder Game", verseFlashcard: "Verse flashcard" }[component.type];
+}
+
 function Layout(){
     useLayoutEffect(() => {
         const previous = window.history.scrollRestoration;
@@ -90,6 +95,21 @@ function Layout(){
     
     const [storedLayout] = useState(() => parseStoredLayout(localStorage.getItem("componentsConfig")));
     const [componentsConfig, setComponentsConfig] = useState<Component_t[]>(storedLayout?.components ?? componentsConfigDefault);
+    const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => {
+        try {
+            const saved: unknown = JSON.parse(localStorage.getItem("collapsedLayoutSections") ?? "[]");
+            return new Set(Array.isArray(saved) ? saved.filter((id): id is string => typeof id === "string") : []);
+        } catch { return new Set(); }
+    });
+
+    function toggleSection(id: string) {
+        setCollapsedSections(previous => {
+            const next = new Set(previous);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            try { localStorage.setItem("collapsedLayoutSections", JSON.stringify([...next])); } catch { /* Keep the choice for this session. */ }
+            return next;
+        });
+    }
 
     // Keep unrecognised entries in storage so a later version can still recover them.
     function saveComponentsConfig(config: Component_t[]) {
@@ -153,6 +173,7 @@ function Layout(){
         if (componentsConfig.some(component => component.id === id && component.type === "audioPlayer")) {
             try { await deleteAudio(id); } catch { setLayoutError("Could not delete saved audio. Please try again."); return; }
         }
+        if (collapsedSections.has(id)) toggleSection(id);
         setComponentsConfig((prev) => {
             const index = prev.findIndex(c => c.id === id);
             if(index === -1) return prev; // not found
@@ -370,7 +391,15 @@ function Layout(){
                     content = <Catechism layoutOptions={layoutOptions} id={c.id} list={c.list}/>;
                     break;
                 }
-            return <div className="layout-section" id={`contents-${c.id}`} role="region" aria-label="Section" tabIndex={-1} key={c.id}>{content}</div>;
+            const collapsed = collapsedSections.has(c.id);
+            const label = sectionLabel(c);
+            return <div className="layout-section" id={`contents-${c.id}`} role="region" aria-label={label} tabIndex={-1} key={c.id}>
+                <button type="button" className="layout-section-toggle" aria-expanded={!collapsed}
+                    aria-controls={`${c.id}-layout-content`} onClick={() => toggleSection(c.id)}>
+                    <span>{label}</span><span className="material-icons" aria-hidden="true">{collapsed ? "expand_more" : "expand_less"}</span>
+                </button>
+                <div id={`${c.id}-layout-content`} className="layout-section-content" hidden={collapsed}>{!collapsed && content}</div>
+            </div>;
             })
         }
         <section className="add-component-container">
